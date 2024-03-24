@@ -27,6 +27,7 @@ env:
   # XPKG_ACCESS_ID and XPKG_TOKEN secrets are set in the GitHub respository (or
   # organization) settings. Create a token at https://accounts.upbound.io.
   XPKG_ACCESS_ID: ${{ secrets.XPKG_ACCESS_ID }}
+  XPKG_TOKEN: ${{ secrets.XPKG_TOKEN }}
 
   # The package to push, without a version tag. The default matches GitHub. For
   # example xpkg.upbound.io/crossplane/function-template-go.

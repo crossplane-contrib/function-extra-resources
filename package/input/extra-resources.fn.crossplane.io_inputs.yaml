@@ -1,0 +1,183 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+  name: inputs.extra-resources.fn.crossplane.io
+spec:
+  group: extra-resources.fn.crossplane.io
+  names:
+    categories:
+    - crossplane
+    kind: Input
+    listKind: InputList
+    plural: inputs
+    singular: input
+  scope: Namespaced
+  versions:
+  - name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: Input can be used to provide input to this Function.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the input to this function.
+            properties:
+              extraResources:
+                description: |-
+                  ExtraResources selects a list of `ExtraResource`s. The resolved
+                  resources are stored in the composite resource at
+                  `spec.extraResourceRefs` and is only updated if it is null.
+                items:
+                  description: ResourceSource selects a ExtraResource.
+                  properties:
+                    apiVersion:
+                      description: APIVersion is the kubernetes API Version of the
+                        target extra resource(s).
+                      type: string
+                    into:
+                      description: Into is the key into which extra resources for
+                        this selector will be placed.
+                      type: string
+                    kind:
+                      description: Kind is the kubernetes kind of the target extra
+                        resource(s).
+                      type: string
+                    ref:
+                      description: |-
+                        Ref is a named reference to a single ExtraResource.
+                        Either Ref or Selector is required.
+                      properties:
+                        name:
+                          description: The name of the object.
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    selector:
+                      description: Selector selects ExtraResource(s) via labels.
+                      properties:
+                        matchLabels:
+                          description: MatchLabels ensures an object with matching
+                            labels is selected.
+                          items:
+                            description: |-
+                              An ResourceSourceSelectorLabelMatcher acts like a k8s label selector but
+                              can draw the label value from a different path.
+                            properties:
+                              fromFieldPathPolicy:
+                                default: Required
+                                description: |-
+                                  FromFieldPathPolicy specifies the policy for the valueFromFieldPath.
+                                  The default is Required, meaning that an error will be returned if the
+                                  field is not found in the composite resource.
+                                  Optional means that if the field is not found in the composite resource,
+                                  that label pair will just be skipped. N.B. other specified label
+                                  matchers will still be used to retrieve the desired
+                                  resource config, if any.
+                                enum:
+                                - Optional
+                                - Required
+                                type: string
+                              key:
+                                description: Key of the label to match.
+                                type: string
+                              type:
+                                default: FromCompositeFieldPath
+                                description: Type specifies where the value for a
+                                  label comes from.
+                                enum:
+                                - FromCompositeFieldPath
+                                - Value
+                                type: string
+                              value:
+                                description: Value specifies a literal label value.
+                                type: string
+                              valueFromFieldPath:
+                                description: ValueFromFieldPath specifies the field
+                                  path to look for the label value.
+                                type: string
+                            required:
+                            - key
+                            type: object
+                          type: array
+                        maxMatch:
+                          description: MaxMatch specifies the number of extracted
+                            ExtraResources in Multiple mode, extracts all if nil.
+                          format: int64
+                          type: integer
+                        minMatch:
+                          description: MinMatch specifies the required minimum of
+                            extracted ExtraResources in Multiple mode.
+                          format: int64
+                          type: integer
+                        sortByFieldPath:
+                          default: metadata.name
+                          description: SortByFieldPath is the path to the field based
+                            on which list of ExtraResources is alphabetically sorted.
+                          type: string
+                      type: object
+                    type:
+                      default: Reference
+                      description: |-
+                        Type specifies the way the ExtraResource is selected.
+                        Default is `Reference`
+                      enum:
+                      - Reference
+                      - Selector
+                      type: string
+                  required:
+                  - into
+                  type: object
+                type: array
+              policy:
+                description: |-
+                  Policy represents the Resolve and Resolution policies which apply to
+                  all ResourceSourceReferences in ExtraResources list.
+                properties:
+                  resolution:
+                    default: Required
+                    description: |-
+                      Resolution specifies whether resolution of this reference is required.
+                      The default is 'Required', which means the reconcile will fail if the
+                      reference cannot be resolved. 'Optional' means this reference will be
+                      a no-op if it cannot be resolved.
+                    enum:
+                    - Required
+                    - Optional
+                    type: string
+                  resolve:
+                    description: |-
+                      Resolve specifies when this reference should be resolved. The default
+                      is 'IfNotPresent', which will attempt to resolve the reference only when
+                      the corresponding field is not present. Use 'Always' to resolve the
+                      reference on every reconcile.
+                    enum:
+                    - Always
+                    - IfNotPresent
+                    type: string
+                type: object
+            required:
+            - extraResources
+            type: object
+        type: object
+    served: true
+    storage: true
