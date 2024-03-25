@@ -47,7 +47,7 @@ func (in *InputSpec) DeepCopyInto(out *InputSpec) {
 	}
 	if in.Policy != nil {
 		in, out := &in.Policy, &out.Policy
-		*out = new(v1.Policy)
+		*out = new(Policy)
 		(*in).DeepCopyInto(*out)
 	}
 }

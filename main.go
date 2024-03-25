@@ -31,6 +31,6 @@ func (c *CLI) Run() error {
 }
 
 func main() {
-	ctx := kong.Parse(&CLI{}, kong.Description("A Crossplane Composition Function."))
+	ctx := kong.Parse(&CLI{}, kong.Description("A Crossplane Composition Function to retrieve extra resources to the context."))
 	ctx.FatalIfErrorf(ctx.Run())
 }

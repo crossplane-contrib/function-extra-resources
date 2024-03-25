@@ -1,4 +1,4 @@
-module github.com/crossplane/function-extra-resources
+module github.com/crossplane-contrib/function-extra-resources
 
 go 1.21
 
