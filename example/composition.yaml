@@ -1,17 +1,60 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: function-template-go
+  name: function-environment-configs
 spec:
   compositeTypeRef:
     apiVersion: example.crossplane.io/v1
     kind: XR
   mode: Pipeline
   pipeline:
-  - step: run-the-template
+  - step: pull-extra-resources
     functionRef:
-      name: function-template-go
+      name: function-extra-resources
     input:
-      apiVersion: template.fn.crossplane.io/v1beta1
+      apiVersion: extra-resources.fn.crossplane.io/v1beta1
       kind: Input
-      example: "Hello world"
+      spec:
+        extraResources:
+          - kind: EnvironmentConfig
+            into: envConfs
+            apiVersion: apiextensions.crossplane.io/v1alpha1
+            type: Selector
+            selector:
+              maxMatch: 2
+              minMatch: 1
+              matchLabels:
+                - key: type
+                  type: Value
+                  value: cluster
+          - kind: XCluster
+            into: XCluster
+            apiVersion: example.crossplane.io/v1
+            type: Selector
+            selector:
+              maxMatch: 2
+              minMatch: 1
+              matchLabels:
+                - key: type
+                  type: Value
+                  value: cluster
+  - step: go-templating
+    functionRef:
+      name: function-go-templating
+    input:
+      apiVersion: gotemplating.fn.crossplane.io/v1beta1
+      kind: GoTemplate
+      source: Inline
+      inline:
+        template: |
+            {{- $XClusters := index (index .context "apiextensions.crossplane.io/extra-resources") "XCluster" }}
+            {{- range $i, $A := $XClusters }}
+            ---
+            apiVersion: vault.upbound.io/v1beta1
+            kind: VaultRole
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: {{index (index $A "metadata") "name"}}
+            spec:
+              forProvider:
+            {{- end}}

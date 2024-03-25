@@ -2,7 +2,7 @@
 // +build generate
 
 // NOTE(negz): See the below link for details on what is happening here.
-// https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module
+// https://go.dev/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module
 
 // Remove existing and generate new input manifests
 //go:generate rm -rf ../package/input/

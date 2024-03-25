@@ -1,0 +1,47 @@
+apiVersion: apiextensions.crossplane.io/v1alpha1
+kind: EnvironmentConfig
+metadata:
+  name: test-x1
+  labels:
+    type: cluster
+    metaName: test
+data:
+  realName: test-x1
+---
+apiVersion: apiextensions.crossplane.io/v1alpha1
+kind: EnvironmentConfig
+metadata:
+  name: test-y1
+  labels:
+    type: cluster
+    metaName: test
+data:
+  realName: test-y1
+---
+apiVersion: example.crossplane.io/v1
+kind: XCluster
+metadata:
+  name: net-staging-blue
+  labels:
+    type: cluster
+spec:
+  compositionRef:
+    name: compositecluster.example.crossplane.io
+  compositionSelector:
+    matchLabels:
+      provider: aws
+  compositionUpdatePolicy: Automatic
+---
+apiVersion: example.crossplane.io/v1
+kind: XCluster
+metadata:
+  name: net-staging-green
+  labels:
+    type: cluster
+spec:
+  compositionRef:
+    name: compositecluster.example.crossplane.io
+  compositionSelector:
+    matchLabels:
+      provider: aws
+  compositionUpdatePolicy: Automatic
