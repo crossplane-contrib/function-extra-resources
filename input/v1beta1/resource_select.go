@@ -27,13 +27,13 @@ type InputSpec struct {
 	// `spec.extraResourceRefs` and is only updated if it is null.
 	ExtraResources []ResourceSource `json:"extraResources"`
 
-	// Policy represents the Resolve and Resolution policies which apply to
-	// all ResourceSourceReferences in ExtraResources list.
+	// Policy represents the Resolution policies which apply to all
+	// ResourceSourceReferences in ExtraResources list.
 	// +optional
-	Policy *xpv1.Policy `json:"policy,omitempty"`
+	Policy *Policy `json:"policy,omitempty"`
 }
 
-// Policy represents the Resolve and Resolution policies of Reference instance.
+// Policy represents the Resolution policy of Reference instance.
 type Policy struct {
 	// Resolution specifies whether resolution of this reference is required.
 	// The default is 'Required', which means the reconcile will fail if the
@@ -43,6 +43,16 @@ type Policy struct {
 	// +kubebuilder:default=Required
 	// +kubebuilder:validation:Enum=Required;Optional
 	Resolution *xpv1.ResolutionPolicy `json:"resolution,omitempty"`
+}
+
+// IsResolutionPolicyOptional checks whether the resolution policy of relevant
+// reference is Optional.
+func (p *Policy) IsResolutionPolicyOptional() bool {
+	if p == nil || p.Resolution == nil {
+		return false
+	}
+
+	return *p.Resolution == xpv1.ResolutionPolicyOptional
 }
 
 // ResourceSourceType specifies the way the ExtraResource is selected.

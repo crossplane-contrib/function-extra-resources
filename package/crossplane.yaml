@@ -2,5 +2,18 @@
 apiVersion: meta.pkg.crossplane.io/v1beta1
 kind: Function
 metadata:
-  name: function-template-go
-spec: {}
+  name: function-extra-resources
+  annotations:
+    meta.crossplane.io/maintainer: Crossplane Maintainers <info@crossplane.io>
+    meta.crossplane.io/source: github.com/crossplane-contrib/function-extra-resources
+    meta.crossplane.io/license: Apache-2.0
+    meta.crossplane.io/description: |
+      A composition function that can retrieve arbitrary cluster-scoped extra resources and add them to the context.
+    meta.crossplane.io/readme: |
+      This composition function retrives arbitrary cluster-scoped extra
+      resources and add them in the specified order into the Context at a
+      well-known key, apiextensions.crossplane.io/extra-resources, so that they
+      can be used by other functions.
+spec:
+  crossplane:
+    version: ">=v1.15.0"
