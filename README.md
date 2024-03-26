@@ -63,20 +63,6 @@ spec:
             {{- end}}
 ```
 
-
-## Installing the `function-extra-resources` Function into a Cluster
-
-``` shell
-cat <<EOF | kubectl apply -f -
-apiVersion: pkg.crossplane.io/v1beta1
-kind: Function
-metadata:
-  name: function-extra-resources
-spec:
-  package: xpkg.upbound.io/crossplane-contrib/function-extra-resources:latest
-EOF
-```
-
 ## Local dev.
 
 ### Air
