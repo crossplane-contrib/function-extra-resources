@@ -16,4 +16,4 @@ metadata:
       can be used by other functions.
 spec:
   crossplane:
-    version: ">=v1.15.0"
+    version: ">=v1.15.0-0"
