@@ -84,7 +84,8 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 	// Sorting is required for determinism.
 	verifiedExtras, err := verifyAndSortExtras(in, extraResources)
 	if err != nil {
-		return nil, errors.Wrapf(err, "sorting and verifying results")
+		response.Fatal(rsp, errors.Errorf("verifying and sorting extra resources: %w", err))
+		return rsp, nil
 	}
 
 	// For now cheaply convert to JSON for serializing.
