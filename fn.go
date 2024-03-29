@@ -84,7 +84,8 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 	// Sorting is required for determinism.
 	verifiedExtras, err := verifyAndSortExtras(in, extraResources)
 	if err != nil {
-		return nil, errors.Wrapf(err, "sorting and verifying results")
+		response.Fatal(rsp, errors.Errorf("verifying and sorting extra resources: %w", err))
+		return rsp, nil
 	}
 
 	// For now cheaply convert to JSON for serializing.
@@ -173,8 +174,11 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 		}
 		switch extraResource.GetType() {
 		case v1beta1.ResourceSourceTypeReference:
-			if len(resources) == 0 && in.Spec.Policy.IsResolutionPolicyOptional() {
-				continue
+			if len(resources) == 0 {
+				if in.Spec.Policy.IsResolutionPolicyOptional() {
+					continue
+				}
+				return nil, errors.Errorf("Required extra resource %q not found", extraResName)
 			}
 			if len(resources) > 1 {
 				return nil, errors.Errorf("expected exactly one extra resource %q, got %d", extraResName, len(resources))
