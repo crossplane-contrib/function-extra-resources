@@ -174,8 +174,11 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 		}
 		switch extraResource.GetType() {
 		case v1beta1.ResourceSourceTypeReference:
-			if len(resources) == 0 && in.Spec.Policy.IsResolutionPolicyOptional() {
-				continue
+			if len(resources) == 0 {
+				if in.Spec.Policy.IsResolutionPolicyOptional() {
+					continue
+				}
+				return nil, errors.Errorf("Required extra resource %q not found", extraResName)
 			}
 			if len(resources) > 1 {
 				return nil, errors.Errorf("expected exactly one extra resource %q, got %d", extraResName, len(resources))
