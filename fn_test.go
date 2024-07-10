@@ -119,6 +119,15 @@ func TestRunFunction(t *testing.T) {
 											}
 										]
 									}
+								},
+								{
+									"type": "Selector",
+									"kind": "EnvironmentConfig",
+									"apiVersion": "apiextensions.crossplane.io/v1alpha1",
+									"into": "obj-5",
+									"selector": {
+										"matchLabels": []
+									}
 								}
 							]
 						}
@@ -167,6 +176,15 @@ func TestRunFunction(t *testing.T) {
 										Labels: map[string]string{
 											"someMoreFoo": "someMoreBar",
 										},
+									},
+								},
+							},
+							"obj-5": {
+								ApiVersion: "apiextensions.crossplane.io/v1alpha1",
+								Kind:       "EnvironmentConfig",
+								Match: &fnv1beta1.ResourceSelector_MatchLabels{
+									MatchLabels: &fnv1beta1.MatchLabels{
+										Labels: map[string]string{},
 									},
 								},
 							},
