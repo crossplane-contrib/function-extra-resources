@@ -130,6 +130,7 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1beta1.Re
 				},
 			}
 		case v1beta1.ResourceSourceTypeSelector:
+			containsMissingOptionalField := false
 			matchLabels := map[string]string{}
 			for _, selector := range extraResource.Selector.MatchLabels {
 				switch selector.GetType() {
@@ -142,12 +143,13 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1beta1.Re
 						if !selector.FromFieldPathIsOptional() {
 							return nil, errors.Wrapf(err, "cannot get value from field path %q", *selector.ValueFromFieldPath)
 						}
+						containsMissingOptionalField = true
 						continue
 					}
 					matchLabels[selector.Key] = value
 				}
 			}
-			if len(matchLabels) == 0 {
+			if len(matchLabels) == 0 && containsMissingOptionalField {
 				continue
 			}
 			extraResources[extraResName] = &fnv1beta1.ResourceSelector{
