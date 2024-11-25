@@ -130,36 +130,48 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1beta1.Re
 				},
 			}
 		case v1beta1.ResourceSourceTypeSelector:
-			matchLabels := map[string]string{}
-			for _, selector := range extraResource.Selector.MatchLabels {
-				switch selector.GetType() {
-				case v1beta1.ResourceSourceSelectorLabelMatcherTypeValue:
-					// TODO validate value not to be nil
-					matchLabels[selector.Key] = *selector.Value
-				case v1beta1.ResourceSourceSelectorLabelMatcherTypeFromCompositeFieldPath:
-					value, err := fieldpath.Pave(xr.Resource.Object).GetString(*selector.ValueFromFieldPath)
-					if err != nil {
-						if !selector.FromFieldPathIsOptional() {
-							return nil, errors.Wrapf(err, "cannot get value from field path %q", *selector.ValueFromFieldPath)
-						}
-						continue
-					}
-					matchLabels[selector.Key] = value
-				}
+			out, err := buildTypeSelectorRequirement(xr, extraResource)
+			if err != nil {
+				return nil, err
 			}
-			if len(matchLabels) == 0 {
-				continue
-			}
-			extraResources[extraResName] = &fnv1beta1.ResourceSelector{
-				ApiVersion: extraResource.APIVersion,
-				Kind:       extraResource.Kind,
-				Match: &fnv1beta1.ResourceSelector_MatchLabels{
-					MatchLabels: &fnv1beta1.MatchLabels{Labels: matchLabels},
-				},
+			if out != nil {
+				extraResources[extraResName] = out
 			}
 		}
 	}
 	return &fnv1beta1.Requirements{ExtraResources: extraResources}, nil
+}
+
+func buildTypeSelectorRequirement(xr *resource.Composite, extraResource v1beta1.ResourceSource) (*fnv1beta1.ResourceSelector, error) {
+	containsMissingOptionalField := false
+	matchLabels := map[string]string{}
+	for _, selector := range extraResource.Selector.MatchLabels {
+		switch selector.GetType() {
+		case v1beta1.ResourceSourceSelectorLabelMatcherTypeValue:
+			// TODO validate value not to be nil
+			matchLabels[selector.Key] = *selector.Value
+		case v1beta1.ResourceSourceSelectorLabelMatcherTypeFromCompositeFieldPath:
+			value, err := fieldpath.Pave(xr.Resource.Object).GetString(*selector.ValueFromFieldPath)
+			if err != nil {
+				if !selector.FromFieldPathIsOptional() {
+					return nil, errors.Wrapf(err, "cannot get value from field path %q", *selector.ValueFromFieldPath)
+				}
+				containsMissingOptionalField = true
+				continue
+			}
+			matchLabels[selector.Key] = value
+		}
+	}
+	if len(matchLabels) == 0 && containsMissingOptionalField {
+		return nil, nil
+	}
+	return &fnv1beta1.ResourceSelector{
+		ApiVersion: extraResource.APIVersion,
+		Kind:       extraResource.Kind,
+		Match: &fnv1beta1.ResourceSelector_MatchLabels{
+			MatchLabels: &fnv1beta1.MatchLabels{Labels: matchLabels},
+		},
+	}, nil
 }
 
 // Verify Min/Max and sort extra resources by field path within a single kind.
@@ -187,13 +199,13 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 
 		case v1beta1.ResourceSourceTypeSelector:
 			selector := extraResource.Selector
-			if selector.MinMatch != nil && len(resources) < int(*selector.MinMatch) {
+			if selector.MinMatch != nil && uint64(len(resources)) < *selector.MinMatch {
 				return nil, errors.Errorf("expected at least %d extra resources %q, got %d", *selector.MinMatch, extraResName, len(resources))
 			}
 			if err := sortExtrasByFieldPath(resources, selector.GetSortByFieldPath()); err != nil {
 				return nil, err
 			}
-			if selector.MaxMatch != nil && len(resources) > int(*selector.MaxMatch) {
+			if selector.MaxMatch != nil && uint64(len(resources)) > *selector.MaxMatch {
 				resources = resources[:*selector.MaxMatch]
 			}
 			for _, r := range resources {
