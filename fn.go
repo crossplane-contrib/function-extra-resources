@@ -134,9 +134,14 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1beta1.Re
 			for _, selector := range extraResource.Selector.MatchLabels {
 				switch selector.GetType() {
 				case v1beta1.ResourceSourceSelectorLabelMatcherTypeValue:
-					// TODO validate value not to be nil
+					if selector.Value == nil {
+						return nil, errors.New("Value cannot be nil for type 'Value'")
+					}
 					matchLabels[selector.Key] = *selector.Value
 				case v1beta1.ResourceSourceSelectorLabelMatcherTypeFromCompositeFieldPath:
+					if selector.ValueFromFieldPath == nil {
+						return nil, errors.New("ValueFromFieldPath cannot be nil for type 'FromCompositeFieldPath'")
+					}
 					value, err := fieldpath.Pave(xr.Resource.Object).GetString(*selector.ValueFromFieldPath)
 					if err != nil {
 						if !selector.FromFieldPathIsOptional() {
