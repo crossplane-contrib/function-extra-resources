@@ -116,6 +116,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 
 // Build requirements takes input and outputs an array of external resoruce requirements to request
 // from Crossplane's external resource API.
+// nolint:gocyclo // Adding non-nil validations increases function complexity.
 func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1beta1.Requirements, error) {
 	extraResources := make(map[string]*fnv1beta1.ResourceSelector, len(in.Spec.ExtraResources))
 	for _, extraResource := range in.Spec.ExtraResources {
