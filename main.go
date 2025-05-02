@@ -4,7 +4,7 @@ package main
 import (
 	"github.com/alecthomas/kong"
 
-	"github.com/crossplane/function-sdk-go"
+	function "github.com/crossplane/function-sdk-go"
 )
 
 // CLI of this Function.
