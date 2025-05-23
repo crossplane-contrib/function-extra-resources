@@ -187,13 +187,13 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 
 		case v1beta1.ResourceSourceTypeSelector:
 			selector := extraResource.Selector
-			if selector.MinMatch != nil && len(resources) < int(*selector.MinMatch) {
+			if selector.MinMatch != nil && uint64(len(resources)) < *selector.MinMatch {
 				return nil, errors.Errorf("expected at least %d extra resources %q, got %d", *selector.MinMatch, extraResName, len(resources))
 			}
 			if err := sortExtrasByFieldPath(resources, selector.GetSortByFieldPath()); err != nil {
 				return nil, err
 			}
-			if selector.MaxMatch != nil && len(resources) > int(*selector.MaxMatch) {
+			if selector.MaxMatch != nil && uint64(len(resources)) > *selector.MaxMatch {
 				resources = resources[:*selector.MaxMatch]
 			}
 			for _, r := range resources {
