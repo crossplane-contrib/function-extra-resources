@@ -116,7 +116,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 // Build requirements takes input and outputs an array of external resoruce requirements to request
 // from Crossplane's external resource API.
-func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Requirements, error) {
+func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Requirements, error) { //nolint:gocyclo // Adding non-nil validations increases function complexity.
 	extraResources := make(map[string]*fnv1.ResourceSelector, len(in.Spec.ExtraResources))
 	for _, extraResource := range in.Spec.ExtraResources {
 		extraResName := extraResource.Into
@@ -134,9 +134,14 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 			for _, selector := range extraResource.Selector.MatchLabels {
 				switch selector.GetType() {
 				case v1beta1.ResourceSourceSelectorLabelMatcherTypeValue:
-					// TODO validate value not to be nil
+					if selector.Value == nil {
+						return nil, errors.New("Value cannot be nil for type 'Value'")
+					}
 					matchLabels[selector.Key] = *selector.Value
 				case v1beta1.ResourceSourceSelectorLabelMatcherTypeFromCompositeFieldPath:
+					if selector.ValueFromFieldPath == nil {
+						return nil, errors.New("ValueFromFieldPath cannot be nil for type 'FromCompositeFieldPath'")
+					}
 					value, err := fieldpath.Pave(xr.Resource.Object).GetString(*selector.ValueFromFieldPath)
 					if err != nil {
 						if !selector.FromFieldPathIsOptional() {
@@ -187,13 +192,13 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 
 		case v1beta1.ResourceSourceTypeSelector:
 			selector := extraResource.Selector
-			if selector.MinMatch != nil && len(resources) < int(*selector.MinMatch) {
+			if selector.MinMatch != nil && uint64(len(resources)) < *selector.MinMatch {
 				return nil, errors.Errorf("expected at least %d extra resources %q, got %d", *selector.MinMatch, extraResName, len(resources))
 			}
 			if err := sortExtrasByFieldPath(resources, selector.GetSortByFieldPath()); err != nil {
 				return nil, err
 			}
-			if selector.MaxMatch != nil && len(resources) > int(*selector.MaxMatch) {
+			if selector.MaxMatch != nil && uint64(len(resources)) > *selector.MaxMatch {
 				resources = resources[:*selector.MaxMatch]
 			}
 			for _, r := range resources {
