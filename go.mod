@@ -2,7 +2,7 @@ module github.com/crossplane-contrib/function-extra-resources
 
 go 1.23
 
-toolchain go1.23.2
+toolchain go1.24.4
 
 require (
 	github.com/alecthomas/kong v0.8.1
