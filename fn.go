@@ -128,6 +128,7 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 				Match: &fnv1.ResourceSelector_MatchName{
 					MatchName: extraResource.Ref.Name,
 				},
+				Namespace: extraResource.Namespace,
 			}
 		case v1beta1.ResourceSourceTypeSelector:
 			matchLabels := map[string]string{}
@@ -161,6 +162,7 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 				Match: &fnv1.ResourceSelector_MatchLabels{
 					MatchLabels: &fnv1.MatchLabels{Labels: matchLabels},
 				},
+				Namespace: extraResource.Namespace,
 			}
 		}
 	}

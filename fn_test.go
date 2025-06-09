@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
@@ -47,7 +48,8 @@ func TestRunFunction(t *testing.T) {
 									"name": "my-xr"
 								},
 								"spec": {
-									"existingEnvSelectorLabel": "someMoreBar"
+									"existingEnvSelectorLabel": "someMoreBar",
+									"existingBazLabel": "someMoreBar"
 								}
 							}`),
 						},
@@ -119,6 +121,32 @@ func TestRunFunction(t *testing.T) {
 											}
 										]
 									}
+								},
+								{
+									"type": "Reference",
+									"kind": "Foo",
+									"apiVersion": "test.crossplane.io/v1alpha1",
+									"namespace": "my-namespace",
+									"into": "obj-5",
+									"ref": {
+										"name": "my-foo"
+									}
+								},
+								{
+									"type": "Selector",
+									"kind": "Bar",
+									"apiVersion": "test.crossplane.io/v1alpha1",
+									"namespace": "my-namespace",
+									"into": "obj-6",
+									"selector": {
+										"matchLabels": [
+											{
+												"key": "someMoreBar",
+												"valueFromFieldPath": "spec.existingBazLabel",
+												"fromFieldPathPolicy": "Required"
+											}
+										]
+									}
 								}
 							]
 						}
@@ -169,6 +197,26 @@ func TestRunFunction(t *testing.T) {
 										},
 									},
 								},
+							},
+							"obj-5": {
+								ApiVersion: "test.crossplane.io/v1alpha1",
+								Kind:       "Foo",
+								Match: &fnv1.ResourceSelector_MatchName{
+									MatchName: "my-foo",
+								},
+								Namespace: ptr.To("my-namespace"),
+							},
+							"obj-6": {
+								ApiVersion: "test.crossplane.io/v1alpha1",
+								Kind:       "Bar",
+								Match: &fnv1.ResourceSelector_MatchLabels{
+									MatchLabels: &fnv1.MatchLabels{
+										Labels: map[string]string{
+											"someMoreBar": "someMoreBar",
+										},
+									},
+								},
+								Namespace: ptr.To("my-namespace"),
 							},
 						},
 					},

@@ -89,6 +89,11 @@ type ResourceSource struct {
 	// APIVersion is the kubernetes API Version of the target extra resource(s).
 	APIVersion string `json:"apiVersion,omitempty"`
 
+	// Namespace is the namespace in which to look for the ExtraResource.
+	// If not set, the resource is assumed to be cluster-scoped.
+	// +optional
+	Namespace *string `json:"namespace,omitempty"`
+
 	// Into is the key into which extra resources for this selector will be placed.
 	Into string `json:"into"`
 }
