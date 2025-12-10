@@ -17,7 +17,7 @@ limitations under the License.
 */
 
 import (
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
 // An InputSpec specifies extra resource(s) for rendering composed resources.
