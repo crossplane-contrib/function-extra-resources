@@ -10,9 +10,9 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
-	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
@@ -68,13 +68,13 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	// function-extra-resources does not know if it has requested the resources already or not.
 	//
 	// If it has and these resources are now present, proceed with verification and conversion.
-	if req.ExtraResources == nil {
+	if req.RequiredResources == nil {
 		f.log.Debug("No extra resources present, exiting", "requirements", rsp.GetRequirements())
 		return rsp, nil
 	}
 
 	// Pull extra resources from the ExtraResources request field.
-	extraResources, err := request.GetExtraResources(req)
+	extraResources, err := request.GetRequiredResources(req)
 	if err != nil {
 		response.Fatal(rsp, errors.Errorf("fetching extra resources %T: %w", req, err))
 		return rsp, nil
@@ -166,11 +166,11 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 			}
 		}
 	}
-	return &fnv1.Requirements{ExtraResources: extraResources}, nil
+	return &fnv1.Requirements{Resources: extraResources}, nil
 }
 
 // Verify Min/Max and sort extra resources by field path within a single kind.
-func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource.Extra, //nolint:gocyclo // TODO(reedjosh): refactor
+func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource.Required, //nolint:gocyclo // TODO(reedjosh): refactor
 ) (cleanedExtras map[string][]unstructured.Unstructured, err error) {
 	cleanedExtras = make(map[string][]unstructured.Unstructured)
 	for _, extraResource := range in.Spec.ExtraResources {
@@ -212,12 +212,12 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 }
 
 // Sort extra resources by field path within a single kind.
-func sortExtrasByFieldPath(extras []resource.Extra, path string) error { //nolint:gocyclo // TODO(phisco): refactor
+func sortExtrasByFieldPath(extras []resource.Required, path string) error { //nolint:gocyclo // TODO(phisco): refactor
 	if path == "" {
 		return errors.New("cannot sort by empty field path")
 	}
 	p := make([]struct {
-		ec  resource.Extra
+		ec  resource.Required
 		val any
 	}, len(extras))
 
