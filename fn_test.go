@@ -158,7 +158,7 @@ func TestRunFunction(t *testing.T) {
 					Meta:    &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
 					Results: []*fnv1.Result{},
 					Requirements: &fnv1.Requirements{
-						ExtraResources: map[string]*fnv1.ResourceSelector{
+						Resources: map[string]*fnv1.ResourceSelector{
 							"obj-0": {
 								ApiVersion: "apiextensions.crossplane.io/v1beta1",
 								Kind:       "EnvironmentConfig",
@@ -242,7 +242,7 @@ func TestRunFunction(t *testing.T) {
 							}`),
 						},
 					},
-					ExtraResources: map[string]*fnv1.Resources{
+					RequiredResources: map[string]*fnv1.Resources{
 						"obj-0": {
 							Items: []*fnv1.Resource{
 								{
@@ -416,7 +416,7 @@ func TestRunFunction(t *testing.T) {
 					Meta:    &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
 					Results: []*fnv1.Result{},
 					Requirements: &fnv1.Requirements{
-						ExtraResources: map[string]*fnv1.ResourceSelector{
+						Resources: map[string]*fnv1.ResourceSelector{
 							"obj-0": {
 								ApiVersion: "apiextensions.crossplane.io/v1beta1",
 								Kind:       "EnvironmentConfig",
@@ -553,7 +553,7 @@ func TestRunFunction(t *testing.T) {
 							}`),
 						},
 					},
-					ExtraResources: map[string]*fnv1.Resources{
+					RequiredResources: map[string]*fnv1.Resources{
 						"environment-config-0": {
 							Items: []*fnv1.Resource{},
 						},
@@ -587,7 +587,7 @@ func TestRunFunction(t *testing.T) {
 						},
 					},
 					Requirements: &fnv1.Requirements{
-						ExtraResources: map[string]*fnv1.ResourceSelector{
+						Resources: map[string]*fnv1.ResourceSelector{
 							"obj-0": {
 								ApiVersion: "apiextensions.crossplane.io/v1beta1",
 								Kind:       "EnvironmentConfig",

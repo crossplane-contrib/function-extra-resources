@@ -68,7 +68,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	// function-extra-resources does not know if it has requested the resources already or not.
 	//
 	// If it has and these resources are now present, proceed with verification and conversion.
-	if req.ExtraResources == nil {
+	if req.RequiredResources == nil {
 		f.log.Debug("No extra resources present, exiting", "requirements", rsp.GetRequirements())
 		return rsp, nil
 	}
@@ -166,7 +166,7 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 			}
 		}
 	}
-	return &fnv1.Requirements{ExtraResources: extraResources}, nil
+	return &fnv1.Requirements{Resources: extraResources}, nil
 }
 
 // Verify Min/Max and sort extra resources by field path within a single kind.
