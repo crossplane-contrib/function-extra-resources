@@ -119,6 +119,10 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Requirements, error) { //nolint:gocyclo // Adding non-nil validations increases function complexity.
 	extraResources := make(map[string]*fnv1.ResourceSelector, len(in.Spec.ExtraResources))
 	for _, extraResource := range in.Spec.ExtraResources {
+		namespace, err := selectValue(extraResource.Namespace, xr)
+		if err != nil {
+			return nil, err
+		}
 		extraResName := extraResource.Into
 		switch extraResource.Type {
 		case v1beta1.ResourceSourceTypeReference, "":
@@ -128,12 +132,12 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 				Match: &fnv1.ResourceSelector_MatchName{
 					MatchName: extraResource.Ref.Name,
 				},
-				Namespace: extraResource.Namespace,
+				Namespace: namespace,
 			}
 		case v1beta1.ResourceSourceTypeSelector:
 			matchLabels := map[string]string{}
 			for _, selector := range extraResource.Selector.MatchLabels {
-				value, err := selectValueWithPolicy(selector.ValueSelectorWithPolicy, xr)
+				value, err := selectValueWithPolicy(&selector.ValueSelectorWithPolicy, xr)
 				if err != nil {
 					return nil, err
 				}
@@ -150,7 +154,7 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 				Match: &fnv1.ResourceSelector_MatchLabels{
 					MatchLabels: &fnv1.MatchLabels{Labels: matchLabels},
 				},
-				Namespace: extraResource.Namespace,
+				Namespace: namespace,
 			}
 		}
 	}
@@ -275,7 +279,11 @@ func sortExtrasByFieldPath(extras []resource.Required, path string) error { //no
 	return nil
 }
 
-func selectValue(selector v1beta1.ValueSelector, xr *resource.Composite) (*string, error) {
+func selectValue(selector *v1beta1.ValueSelector, xr *resource.Composite) (*string, error) {
+	if selector == nil {
+		return nil, nil
+	}
+
 	t := selector.GetType()
 	switch t {
 	case v1beta1.ValueSelectorTypeValue:
@@ -286,7 +294,11 @@ func selectValue(selector v1beta1.ValueSelector, xr *resource.Composite) (*strin
 	return nil, errors.Errorf("unknown value selector type %q", t)
 }
 
-func selectValueWithPolicy(selector v1beta1.ValueSelectorWithPolicy, xr *resource.Composite) (*string, error) {
+func selectValueWithPolicy(selector *v1beta1.ValueSelectorWithPolicy, xr *resource.Composite) (*string, error) {
+	if selector == nil {
+		return nil, nil
+	}
+
 	t := selector.GetType()
 	switch t {
 	case v1beta1.ValueSelectorTypeValue:

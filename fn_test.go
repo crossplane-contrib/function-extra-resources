@@ -45,7 +45,8 @@ func TestRunFunction(t *testing.T) {
 								"apiVersion": "test.crossplane.io/v1alpha1",
 								"kind": "XR",
 								"metadata": {
-									"name": "my-xr"
+									"name": "my-xr",
+									"namespace": "xr-namespace"
 								},
 								"spec": {
 									"existingEnvSelectorLabel": "someMoreBar",
@@ -126,7 +127,10 @@ func TestRunFunction(t *testing.T) {
 									"type": "Reference",
 									"kind": "Foo",
 									"apiVersion": "test.crossplane.io/v1alpha1",
-									"namespace": "my-namespace",
+									"namespace": {
+										"type": "Value",
+										"value": "my-namespace"
+									},
 									"into": "obj-5",
 									"ref": {
 										"name": "my-foo"
@@ -136,7 +140,10 @@ func TestRunFunction(t *testing.T) {
 									"type": "Selector",
 									"kind": "Bar",
 									"apiVersion": "test.crossplane.io/v1alpha1",
-									"namespace": "my-namespace",
+									"namespace": {
+										"type": "FromCompositeFieldPath",
+										"valueFromFieldPath": "metadata.namespace"
+									},
 									"into": "obj-6",
 									"selector": {
 										"matchLabels": [
@@ -216,7 +223,7 @@ func TestRunFunction(t *testing.T) {
 										},
 									},
 								},
-								Namespace: ptr.To("my-namespace"),
+								Namespace: ptr.To("xr-namespace"),
 							},
 						},
 					},

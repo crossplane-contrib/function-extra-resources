@@ -63,9 +63,24 @@ spec:
                       type: string
                     namespace:
                       description: |-
-                        Namespace is the namespace in which to look for the ExtraResource.
+                        Namespace selects the namespace in which to look for the ExtraResource.
                         If not set, the resource is assumed to be cluster-scoped.
-                      type: string
+                      properties:
+                        type:
+                          default: FromCompositeFieldPath
+                          description: Type specifies where the value comes from.
+                          enum:
+                          - FromCompositeFieldPath
+                          - Value
+                          type: string
+                        value:
+                          description: Value specifies a literal value.
+                          type: string
+                        valueFromFieldPath:
+                          description: ValueFromFieldPath specifies the field path
+                            to look for the value.
+                          type: string
+                      type: object
                     ref:
                       description: |-
                         Ref is a named reference to a single ExtraResource.

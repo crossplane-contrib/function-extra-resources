@@ -122,8 +122,8 @@ func (in *ResourceSource) DeepCopyInto(out *ResourceSource) {
 	}
 	if in.Namespace != nil {
 		in, out := &in.Namespace, &out.Namespace
-		*out = new(string)
-		**out = **in
+		*out = new(ValueSelector)
+		(*in).DeepCopyInto(*out)
 	}
 }
 
