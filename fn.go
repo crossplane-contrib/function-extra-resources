@@ -275,6 +275,17 @@ func sortExtrasByFieldPath(extras []resource.Required, path string) error { //no
 	return nil
 }
 
+func selectValue(selector v1beta1.ValueSelector, xr *resource.Composite) (*string, error) {
+	t := selector.GetType()
+	switch t {
+	case v1beta1.ValueSelectorTypeValue:
+		return selectValueFromValue(selector.ValueFromValue)
+	case v1beta1.ValueSelectorTypeFromCompositeFieldPath:
+		return selectValueFromFieldPath(selector.ValueFromCompositeFieldPath, xr)
+	}
+	return nil, errors.Errorf("unknown value selector type %q", t)
+}
+
 func selectValueWithPolicy(selector v1beta1.ValueSelectorWithPolicy, xr *resource.Composite) (*string, error) {
 	t := selector.GetType()
 	switch t {
@@ -287,15 +298,20 @@ func selectValueWithPolicy(selector v1beta1.ValueSelectorWithPolicy, xr *resourc
 }
 
 func selectValueFromFieldPathWithPolicy(selector v1beta1.ValueFromCompositeFieldPathWithPolicy, xr *resource.Composite) (*string, error) {
+	value, err := selectValueFromFieldPath(selector.ValueFromCompositeFieldPath, xr)
+	if err != nil && !selector.FromFieldPathIsOptional() {
+		return nil, err
+	}
+	return value, nil
+}
+
+func selectValueFromFieldPath(selector v1beta1.ValueFromCompositeFieldPath, xr *resource.Composite) (*string, error) {
 	if selector.ValueFromFieldPath == nil {
 		return nil, errors.New("ValueFromFieldPath cannot be nil for type 'FromCompositeFieldPath'")
 	}
 	value, err := fieldpath.Pave(xr.Resource.Object).GetString(*selector.ValueFromFieldPath)
 	if err != nil {
-		if !selector.FromFieldPathIsOptional() {
-			return nil, errors.Wrapf(err, "cannot get value from field path %q", *selector.ValueFromFieldPath)
-		}
-		return nil, nil
+		return nil, errors.Wrapf(err, "cannot get value from field path %q", *selector.ValueFromFieldPath)
 	}
 	return &value, nil
 }

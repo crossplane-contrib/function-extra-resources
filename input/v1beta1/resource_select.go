@@ -160,21 +160,41 @@ type ResourceSourceSelectorLabelMatcher struct {
 	ValueSelectorWithPolicy `json:",inline"`
 }
 
-type ValueSelectorWithPolicy struct {
+// ValueSelectorBase is the base of ValueSelector and ValueSelectorWithPolicy,
+// containing the Type field and all value sources that do not have a
+// with-policy variant.
+type ValueSelectorBase struct {
 	// Type specifies where the value comes from.
 	// +optional
 	// +kubebuilder:validation:Enum=FromCompositeFieldPath;Value
 	// +kubebuilder:default=FromCompositeFieldPath
 	Type ValueSelectorType `json:"type,omitempty"`
 
-	ValueFromValue                        `json:",inline"`
+	ValueFromValue `json:",inline"`
+}
+
+// ValueSelector is a value selector that must return a value.
+type ValueSelector struct {
+	ValueSelectorBase           `json:",inline"`
+	ValueFromCompositeFieldPath `json:",inline"`
+}
+
+// ValueSelectorWithPolicy is a value selector that may optionally return a
+// value when the selection policy is Optional.
+type ValueSelectorWithPolicy struct {
+	ValueSelectorBase                     `json:",inline"`
 	ValueFromCompositeFieldPathWithPolicy `json:",inline"`
+}
+
+// A ValueFromCompositeFieldPath draws a value from a field path.
+type ValueFromCompositeFieldPath struct {
+	// ValueFromFieldPath specifies the field path to look for the value.
+	ValueFromFieldPath *string `json:"valueFromFieldPath,omitempty"`
 }
 
 // A ValueFromCompositeFieldPathWithPolicy draws a value from a field path.
 type ValueFromCompositeFieldPathWithPolicy struct {
-	// ValueFromFieldPath specifies the field path to look for the value.
-	ValueFromFieldPath *string `json:"valueFromFieldPath,omitempty"`
+	ValueFromCompositeFieldPath `json:",inline"`
 
 	// FromFieldPathPolicy specifies the policy for the valueFromFieldPath.
 	// The default is Required.
@@ -195,7 +215,7 @@ func (e *ValueFromCompositeFieldPathWithPolicy) FromFieldPathIsOptional() bool {
 }
 
 // GetType returns the type of the value selector, returning the default if not set.
-func (e *ValueSelectorWithPolicy) GetType() ValueSelectorType {
+func (e *ValueSelectorBase) GetType() ValueSelectorType {
 	if e == nil || e.Type == "" {
 		return ValueSelectorTypeFromCompositeFieldPath
 	}
