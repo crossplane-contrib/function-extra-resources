@@ -136,58 +136,68 @@ func (e *ResourceSourceSelector) GetSortByFieldPath() string {
 	return e.SortByFieldPath
 }
 
-// ResourceSourceSelectorLabelMatcherType specifies where the value for a label comes from.
-type ResourceSourceSelectorLabelMatcherType string
+// ValueSelectorType specifies where a value comes from.
+type ValueSelectorType string
 
 const (
-	// ResourceSourceSelectorLabelMatcherTypeFromCompositeFieldPath extracts
-	// the label value from a composite fieldpath.
-	ResourceSourceSelectorLabelMatcherTypeFromCompositeFieldPath ResourceSourceSelectorLabelMatcherType = "FromCompositeFieldPath"
-	// ResourceSourceSelectorLabelMatcherTypeValue uses a literal as label
-	// value.
-	ResourceSourceSelectorLabelMatcherTypeValue ResourceSourceSelectorLabelMatcherType = "Value"
+	// ValueSelectorTypeFromCompositeFieldPath extracts the value from a composite
+	// fieldpath.
+	ValueSelectorTypeFromCompositeFieldPath ValueSelectorType = "FromCompositeFieldPath"
+	// ValueSelectorTypeValue uses a literal as value.
+	ValueSelectorTypeValue ValueSelectorType = "Value"
 )
 
 // An ResourceSourceSelectorLabelMatcher acts like a k8s label selector but
-// can draw the label value from a different path.
+// can draw the label value from a different path. When using
+// FromCompositeFieldPath with fromFieldPathPolicy Optional, and a field is not
+// found in the composite resource, that label pair will just be skipped. N.B.
+// other specified label matchers will still be used to retrieve the desired
+// resource config, if any.
 type ResourceSourceSelectorLabelMatcher struct {
-	// Type specifies where the value for a label comes from.
-	// +optional
-	// +kubebuilder:validation:Enum=FromCompositeFieldPath;Value
-	// +kubebuilder:default=FromCompositeFieldPath
-	Type ResourceSourceSelectorLabelMatcherType `json:"type,omitempty"`
-
 	// Key of the label to match.
 	Key string `json:"key"`
 
-	// ValueFromFieldPath specifies the field path to look for the label value.
+	ValueSelectorWithPolicy `json:",inline"`
+}
+
+type ValueSelectorWithPolicy struct {
+	// Type specifies where the value comes from.
+	// +optional
+	// +kubebuilder:validation:Enum=FromCompositeFieldPath;Value
+	// +kubebuilder:default=FromCompositeFieldPath
+	Type ValueSelectorType `json:"type,omitempty"`
+
+	ValueFromValue                        `json:",inline"`
+	ValueFromCompositeFieldPathWithPolicy `json:",inline"`
+}
+
+// A ValueFromCompositeFieldPathWithPolicy draws a value from a field path.
+type ValueFromCompositeFieldPathWithPolicy struct {
+	// ValueFromFieldPath specifies the field path to look for the value.
 	ValueFromFieldPath *string `json:"valueFromFieldPath,omitempty"`
 
 	// FromFieldPathPolicy specifies the policy for the valueFromFieldPath.
-	// The default is Required, meaning that an error will be returned if the
-	// field is not found in the composite resource.
-	// Optional means that if the field is not found in the composite resource,
-	// that label pair will just be skipped. N.B. other specified label
-	// matchers will still be used to retrieve the desired
-	// resource config, if any.
+	// The default is Required.
 	// +kubebuilder:validation:Enum=Optional;Required
 	// +kubebuilder:default=Required
 	FromFieldPathPolicy *FromFieldPathPolicy `json:"fromFieldPathPolicy,omitempty"`
+}
 
-	// Value specifies a literal label value.
+// A ValueFromValue is a literal value.
+type ValueFromValue struct {
+	// Value specifies a literal value.
 	Value *string `json:"value,omitempty"`
 }
 
-// FromFieldPathIsOptional returns true if the FromFieldPathPolicy is set to
-// +optional
-func (e *ResourceSourceSelectorLabelMatcher) FromFieldPathIsOptional() bool {
+// FromFieldPathIsOptional returns true if the FromFieldPathPolicy is set to Optional.
+func (e *ValueFromCompositeFieldPathWithPolicy) FromFieldPathIsOptional() bool {
 	return e.FromFieldPathPolicy != nil && *e.FromFieldPathPolicy == FromFieldPathPolicyOptional
 }
 
-// GetType returns the type of the label matcher, returning the default if not set.
-func (e *ResourceSourceSelectorLabelMatcher) GetType() ResourceSourceSelectorLabelMatcherType {
+// GetType returns the type of the value selector, returning the default if not set.
+func (e *ValueSelectorWithPolicy) GetType() ValueSelectorType {
 	if e == nil || e.Type == "" {
-		return ResourceSourceSelectorLabelMatcherTypeFromCompositeFieldPath
+		return ValueSelectorTypeFromCompositeFieldPath
 	}
 	return e.Type
 }

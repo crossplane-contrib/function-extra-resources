@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.0
+    controller-gen.kubebuilder.io/version: v0.18.0
   name: inputs.extra-resources.fn.crossplane.io
 spec:
   group: extra-resources.fn.crossplane.io
@@ -86,18 +86,17 @@ spec:
                           items:
                             description: |-
                               An ResourceSourceSelectorLabelMatcher acts like a k8s label selector but
-                              can draw the label value from a different path.
+                              can draw the label value from a different path. When using
+                              FromCompositeFieldPath with fromFieldPathPolicy Optional, and a field is not
+                              found in the composite resource, that label pair will just be skipped. N.B.
+                              other specified label matchers will still be used to retrieve the desired
+                              resource config, if any.
                             properties:
                               fromFieldPathPolicy:
                                 default: Required
                                 description: |-
                                   FromFieldPathPolicy specifies the policy for the valueFromFieldPath.
-                                  The default is Required, meaning that an error will be returned if the
-                                  field is not found in the composite resource.
-                                  Optional means that if the field is not found in the composite resource,
-                                  that label pair will just be skipped. N.B. other specified label
-                                  matchers will still be used to retrieve the desired
-                                  resource config, if any.
+                                  The default is Required.
                                 enum:
                                 - Optional
                                 - Required
@@ -107,18 +106,18 @@ spec:
                                 type: string
                               type:
                                 default: FromCompositeFieldPath
-                                description: Type specifies where the value for a
-                                  label comes from.
+                                description: Type specifies where the value comes
+                                  from.
                                 enum:
                                 - FromCompositeFieldPath
                                 - Value
                                 type: string
                               value:
-                                description: Value specifies a literal label value.
+                                description: Value specifies a literal value.
                                 type: string
                               valueFromFieldPath:
                                 description: ValueFromFieldPath specifies the field
-                                  path to look for the label value.
+                                  path to look for the value.
                                 type: string
                             required:
                             - key
