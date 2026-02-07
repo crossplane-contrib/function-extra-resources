@@ -607,6 +607,57 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 		},
+		"RequestNamespaceNotFoundRequired": {
+			reason: "The Function should return fatal if a required namespace is not found in composite",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "hello"},
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{
+								"apiVersion": "test.crossplane.io/v1alpha1",
+								"kind": "XR",
+								"metadata": {
+									"name": "my-xr"
+								}
+							}`),
+						},
+					},
+					Input: resource.MustStructJSON(`{
+						"apiVersion": "extra-resources.fn.crossplane.io/v1beta1",
+						"kind": "Input",
+						"spec": {
+							"extraResources": [
+								{	
+									"type": "Reference",
+									"into": "obj-0",
+									"kind": "EnvironmentConfig",
+									"apiVersion": "apiextensions.crossplane.io/v1beta1",
+									"ref": {
+										"name": "my-env-config"
+									},
+									"namespace": {
+										"type": "FromCompositeFieldPath",
+										"valueFromFieldPath": "spec.namespace"
+									}
+								}
+							]
+						}
+					}`),
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for name, tc := range cases {
