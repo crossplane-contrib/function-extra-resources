@@ -600,6 +600,110 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 		},
+		"FromField": {
+			reason: "The Function should extract from FromFieldPath.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "hello"},
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{
+								"apiVersion": "test.crossplane.io/v1alpha1",
+								"kind": "XR",
+								"metadata": {
+									"name": "my-xr"
+								}
+							}`),
+						},
+					},
+					RequiredResources: map[string]*fnv1.Resources{
+						"obj-0": {
+							Items: []*fnv1.Resource{
+								{
+									Resource: resource.MustStructJSON(`{
+									"apiVersion": "apiextensions.crossplane.io/v1beta1",
+									"kind": "EnvironmentConfig",
+									"metadata": {
+										"name": "first",
+										"labels": {
+											"foo": "bar"
+										}
+									}
+								}`),
+								},
+								{
+									Resource: resource.MustStructJSON(`{
+									"apiVersion": "apiextensions.crossplane.io/v1beta1",
+									"kind": "EnvironmentConfig",
+									"metadata": {
+										"name": "second",
+										"labels": {
+											"foo": "bar"
+										}
+									}
+								}`),
+								},
+							},
+						},
+					},
+					Input: resource.MustStructJSON(`{
+						"apiVersion": "extra-resources.fn.crossplane.io/v1beta1",
+						"kind": "Input",
+						"spec": {
+							"extraResources": [
+								{
+									"into": "obj-0",
+									"kind": "EnvironmentConfig",
+									"apiVersion": "apiextensions.crossplane.io/v1beta1",
+									"fromFieldPath": "metadata.name",
+									"type": "Selector",
+									"selector": {
+										"matchLabels": [
+											{
+												"type": "Value",
+												"key": "foo",
+												"value": "bar"
+											}
+										]
+									}
+								}
+							]
+						}
+					}`),
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta:    &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{},
+					Requirements: &fnv1.Requirements{
+						Resources: map[string]*fnv1.ResourceSelector{
+							"obj-0": {
+								ApiVersion: "apiextensions.crossplane.io/v1beta1",
+								Kind:       "EnvironmentConfig",
+								Match: &fnv1.ResourceSelector_MatchLabels{
+									MatchLabels: &fnv1.MatchLabels{
+										Labels: map[string]string{
+											"foo": "bar",
+										},
+									},
+								},
+							},
+						},
+					},
+					Context: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							FunctionContextKeyExtraResources: structpb.NewStructValue(resource.MustStructJSON(`{
+								"obj-0": [
+									"first",
+									"second"
+								]
+							}`)),
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for name, tc := range cases {
