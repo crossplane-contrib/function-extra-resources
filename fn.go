@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sort"
 
@@ -114,8 +115,8 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 // from Crossplane's external resource API.
 func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Requirements, error) { //nolint:gocyclo // Adding non-nil validations increases function complexity.
 	extraResources := make(map[string]*fnv1.ResourceSelector, len(in.Spec.ExtraResources))
-	for _, extraResource := range in.Spec.ExtraResources {
-		extraResName := extraResource.ToFieldPath
+	for i, extraResource := range in.Spec.ExtraResources {
+		extraResName := fmt.Sprintf("resources-%d", i)
 		switch extraResource.Type {
 		case v1beta1.ResourceSourceTypeReference, "":
 			extraResources[extraResName] = &fnv1.ResourceSelector{
@@ -169,8 +170,8 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource.Required, //nolint:gocyclo // TODO(reedjosh): refactor
 ) ([]FetchedResult, error) {
 	results := []FetchedResult{}
-	for _, extraResource := range in.Spec.ExtraResources {
-		extraResName := extraResource.ToFieldPath
+	for i, extraResource := range in.Spec.ExtraResources {
+		extraResName := fmt.Sprintf("resources-%d", i)
 		resources, ok := extraResources[extraResName]
 		if !ok {
 			return nil, errors.Errorf("cannot find expected extra resource %q", extraResName)
