@@ -8,6 +8,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
@@ -140,6 +141,15 @@ func (f *Function) intoContext(verifiedExtras []FetchedResult) (*unstructured.Un
 }
 
 func (f *Function) intoEnvironment(req *fnv1.RunFunctionRequest, verifiedExtras []FetchedResult) (*unstructured.Unstructured, error) {
+	var inputEnv *unstructured.Unstructured
+	if v, ok := request.GetContextKey(req, FunctionContextKeyEnvironment); ok {
+		inputEnv = &unstructured.Unstructured{}
+		if err := resource.AsObject(v.GetStructValue(), inputEnv); err != nil {
+			return nil, errors.Wrapf(err, "cannot get Composition environment from %T context key %q", req, FunctionContextKeyEnvironment)
+		}
+		f.log.Debug("Loaded Composition environment from Function context", "context-key", FunctionContextKeyEnvironment)
+	}
+
 	mergedData := map[string]interface{}{}
 	for _, extras := range verifiedExtras {
 		for _, extra := range extras.resources {
@@ -156,6 +166,17 @@ func (f *Function) intoEnvironment(req *fnv1.RunFunctionRequest, verifiedExtras 
 				return nil, errors.New("must set toFieldPath when extracted value is not an object")
 			}
 		}
+	}
+
+	// merge input env if any
+	if inputEnv != nil {
+		mergedData = mergeMaps(inputEnv.Object, mergedData)
+	}
+
+	// build environment and return it in the response as context
+	out := &unstructured.Unstructured{Object: mergedData}
+	if out.GroupVersionKind().Empty() {
+		out.SetGroupVersionKind(schema.GroupVersionKind{Group: "internal.crossplane.io", Kind: "Environment", Version: "v1alpha1"})
 	}
 
 	return out, nil
