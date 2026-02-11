@@ -93,8 +93,8 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 	out := &unstructured.Unstructured{Object: map[string]interface{}{}}
 	for _, extras := range verifiedExtras {
-		if err := fieldpath.Pave(out.Object).SetValue(extras.source.Into, extras.resources); err != nil {
-			response.Fatal(rsp, errors.Wrapf(err, "cannot set nested field path %q", extras.source.Into))
+		if err := fieldpath.Pave(out.Object).SetValue(extras.source.ToFieldPath, extras.resources); err != nil {
+			response.Fatal(rsp, errors.Wrapf(err, "cannot set nested field path %q", extras.source.ToFieldPath))
 			return rsp, nil
 		}
 	}
@@ -115,7 +115,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Requirements, error) { //nolint:gocyclo // Adding non-nil validations increases function complexity.
 	extraResources := make(map[string]*fnv1.ResourceSelector, len(in.Spec.ExtraResources))
 	for _, extraResource := range in.Spec.ExtraResources {
-		extraResName := extraResource.Into
+		extraResName := extraResource.ToFieldPath
 		switch extraResource.Type {
 		case v1beta1.ResourceSourceTypeReference, "":
 			extraResources[extraResName] = &fnv1.ResourceSelector{
@@ -170,7 +170,7 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 ) ([]FetchedResult, error) {
 	results := []FetchedResult{}
 	for _, extraResource := range in.Spec.ExtraResources {
-		extraResName := extraResource.Into
+		extraResName := extraResource.ToFieldPath
 		resources, ok := extraResources[extraResName]
 		if !ok {
 			return nil, errors.Errorf("cannot find expected extra resource %q", extraResName)

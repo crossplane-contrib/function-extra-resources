@@ -63,7 +63,7 @@ func TestRunFunction(t *testing.T) {
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"type": "Reference",
-									"into": "obj-0",
+									"toFieldPath": "obj-0",
 									"ref": {	
 										"name": "my-env-config"
 									}
@@ -72,7 +72,7 @@ func TestRunFunction(t *testing.T) {
 									"type": "Reference",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
-									"into": "obj-1",
+									"toFieldPath": "obj-1",
 									"ref": {	
 										"name": "my-second-env-config"
 									}
@@ -81,7 +81,7 @@ func TestRunFunction(t *testing.T) {
 									"type": "Selector",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
-									"into": "obj-2",
+									"toFieldPath": "obj-2",
 									"selector": {
 										"matchLabels": [
 											{
@@ -96,7 +96,7 @@ func TestRunFunction(t *testing.T) {
 									"type": "Selector",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
-									"into": "obj-3",
+									"toFieldPath": "obj-3",
 									"selector": {
 										"matchLabels": [
 											{
@@ -111,7 +111,7 @@ func TestRunFunction(t *testing.T) {
 									"type": "Selector",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
-									"into": "obj-4",
+									"toFieldPath": "obj-4",
 									"selector": {
 										"matchLabels": [
 											{
@@ -127,7 +127,7 @@ func TestRunFunction(t *testing.T) {
 									"kind": "Foo",
 									"apiVersion": "test.crossplane.io/v1alpha1",
 									"namespace": "my-namespace",
-									"into": "obj-5",
+									"toFieldPath": "obj-5",
 									"ref": {
 										"name": "my-foo"
 									}
@@ -137,7 +137,7 @@ func TestRunFunction(t *testing.T) {
 									"kind": "Bar",
 									"apiVersion": "test.crossplane.io/v1alpha1",
 									"namespace": "my-namespace",
-									"into": "obj-6",
+									"toFieldPath": "obj-6",
 									"selector": {
 										"matchLabels": [
 											{
@@ -345,7 +345,7 @@ func TestRunFunction(t *testing.T) {
 							"extraResources": [
 								{
 									"type": "Reference",
-									"into": "obj-0",
+									"toFieldPath": "obj-0",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"ref": {
@@ -354,7 +354,7 @@ func TestRunFunction(t *testing.T) {
 								},
 								{
 									"type": "Reference",
-									"into": "obj-1",
+									"toFieldPath": "obj-1",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"ref": {
@@ -363,7 +363,7 @@ func TestRunFunction(t *testing.T) {
 								},
 								{
 									"type": "Selector",
-									"into": "obj-2",
+									"toFieldPath": "obj-2",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"selector": {
@@ -378,7 +378,7 @@ func TestRunFunction(t *testing.T) {
 								},
 								{
 									"type": "Selector",
-									"into": "obj-3",
+									"toFieldPath": "obj-3",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"selector": {
@@ -393,7 +393,7 @@ func TestRunFunction(t *testing.T) {
 								},
 								{
 									"type": "Selector",
-									"into": "obj-4",
+									"toFieldPath": "obj-4",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"kind": "EnvironmentConfig",
 									"selector": {
@@ -565,7 +565,7 @@ func TestRunFunction(t *testing.T) {
 							"extraResources": [
 								{	
 									"type": "Reference",
-									"into": "obj-0",
+									"toFieldPath": "obj-0",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"ref": {
@@ -652,7 +652,7 @@ func TestRunFunction(t *testing.T) {
 						"spec": {
 							"extraResources": [
 								{
-									"into": "obj-0",
+									"toFieldPath": "obj-0",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"fromFieldPath": "metadata.name",

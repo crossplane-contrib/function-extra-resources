@@ -17,7 +17,7 @@ spec:
       spec:
         extraResources:
           - kind: EnvironmentConfig
-            into: envConfs
+            toFieldPath: envConfs
             apiVersion: apiextensions.crossplane.io/v1alpha1
             type: Selector
             selector:
@@ -28,7 +28,7 @@ spec:
                   type: Value
                   value: cluster
           - kind: XCluster
-            into: XCluster
+            toFieldPath: XCluster
             apiVersion: example.crossplane.io/v1
             type: Selector
             selector:

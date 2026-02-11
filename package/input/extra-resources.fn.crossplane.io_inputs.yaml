@@ -57,10 +57,6 @@ spec:
                       description: FromFieldPath specifies a field path to extract
                         from the object, instead of the whole object.
                       type: string
-                    into:
-                      description: Into is the key into which extra resources for
-                        this selector will be placed.
-                      type: string
                     kind:
                       description: Kind is the kubernetes kind of the target extra
                         resource(s).
@@ -144,6 +140,10 @@ spec:
                             on which list of ExtraResources is alphabetically sorted.
                           type: string
                       type: object
+                    toFieldPath:
+                      description: ToFieldPath is the context field path into which
+                        extra resources for this selector will be placed.
+                      type: string
                     type:
                       default: Reference
                       description: |-
@@ -154,7 +154,7 @@ spec:
                       - Selector
                       type: string
                   required:
-                  - into
+                  - toFieldPath
                   type: object
                 type: array
               policy:

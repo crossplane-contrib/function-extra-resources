@@ -31,7 +31,7 @@ spec:
       spec:
         extraResources:
           - kind: XCluster
-            into: XCluster
+            toFieldPath: XCluster
             apiVersion: example.crossplane.io/v1
             type: Selector
             selector:
