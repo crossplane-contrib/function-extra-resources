@@ -600,8 +600,8 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 		},
-		"FromField": {
-			reason: "The Function should extract from FromFieldPath.",
+		"FromFieldPathAndToFieldPath": {
+			reason: "The Function should extract from FromFieldPath and put into ToFieldPath.",
 			args: args{
 				req: &fnv1.RunFunctionRequest{
 					Meta: &fnv1.RequestMeta{Tag: "hello"},
@@ -617,7 +617,7 @@ func TestRunFunction(t *testing.T) {
 						},
 					},
 					RequiredResources: map[string]*fnv1.Resources{
-						"obj-0": {
+						"envconfs.names": {
 							Items: []*fnv1.Resource{
 								{
 									Resource: resource.MustStructJSON(`{
@@ -652,10 +652,10 @@ func TestRunFunction(t *testing.T) {
 						"spec": {
 							"extraResources": [
 								{
-									"toFieldPath": "obj-0",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"fromFieldPath": "metadata.name",
+									"toFieldPath": "envconfs.names",
 									"type": "Selector",
 									"selector": {
 										"matchLabels": [
@@ -678,7 +678,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1.Result{},
 					Requirements: &fnv1.Requirements{
 						Resources: map[string]*fnv1.ResourceSelector{
-							"obj-0": {
+							"envconfs.names": {
 								ApiVersion: "apiextensions.crossplane.io/v1beta1",
 								Kind:       "EnvironmentConfig",
 								Match: &fnv1.ResourceSelector_MatchLabels{
@@ -693,11 +693,13 @@ func TestRunFunction(t *testing.T) {
 					},
 					Context: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							FunctionContextKeyExtraResources: structpb.NewStructValue(resource.MustStructJSON(`{
-								"obj-0": [
-									"first",
-									"second"
-								]
+							"apiextensions.crossplane.io/extra-resources": structpb.NewStructValue(resource.MustStructJSON(`{
+									"envconfs": {
+											"names": [
+													"first",
+													"second"
+											]
+									}
 							}`)),
 						},
 					},
