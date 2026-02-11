@@ -19,6 +19,10 @@ import (
 	"github.com/crossplane/function-sdk-go/response"
 )
 
+const (
+	FunctionContextKeyExtraResources = "apiextensions.crossplane.io/extra-resources"
+)
+
 func TestRunFunction(t *testing.T) {
 	type args struct {
 		ctx context.Context

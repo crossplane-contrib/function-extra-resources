@@ -157,6 +157,23 @@ spec:
                   - toFieldPath
                   type: object
                 type: array
+              into:
+                description: Into specifies how/where to store the extra resources.
+                properties:
+                  contextKey:
+                    default: apiextensions.crossplane.io/extra-resources
+                    description: ContextKey key to put extra resources into when Type
+                      is Context.
+                    type: string
+                  type:
+                    default: Context
+                    description: |-
+                      Type determines how to return the results. The default is to store the
+                      extra resources in a context key.
+                    enum:
+                    - Context
+                    type: string
+                type: object
               policy:
                 description: |-
                   Policy represents the Resolution policies which apply to all

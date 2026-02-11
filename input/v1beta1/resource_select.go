@@ -20,12 +20,19 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
+const (
+	FunctionContextKeyExtraResources = "apiextensions.crossplane.io/extra-resources"
+)
+
 // An InputSpec specifies extra resource(s) for rendering composed resources.
 type InputSpec struct {
 	// ExtraResources selects a list of `ExtraResource`s. The resolved
 	// resources are stored in the composite resource at
 	// `spec.extraResourceRefs` and is only updated if it is null.
 	ExtraResources []ResourceSource `json:"extraResources"`
+
+	// Into specifies how/where to store the extra resources.
+	Into *Into `json:"into,omitempty"`
 
 	// Policy represents the Resolution policies which apply to all
 	// ResourceSourceReferences in ExtraResources list.
@@ -222,4 +229,43 @@ func (pp *PatchPolicy) GetFromFieldPathPolicy() FromFieldPathPolicy {
 		return FromFieldPathPolicyOptional
 	}
 	return *pp.FromFieldPath
+}
+
+// An Into specifies how and where to return the extra resources results.
+type Into struct {
+	// Type determines how to return the results. The default is to store the
+	// extra resources in a context key.
+	// +kubebuilder:validation:Enum=Context
+	// +kubebuilder:default=Context
+	Type *IntoType `json:"type,omitempty"`
+
+	// ContextKey key to put extra resources into when Type is Context.
+	// +kubebuilder:default=apiextensions.crossplane.io/extra-resources
+	ContextKey *string `json:"contextKey,omitempty"`
+}
+
+// An IntoType specifies how to return the extra resources results.
+type IntoType string
+
+// IntoType types.
+const (
+	IntoTypeContext IntoType = "Context"
+)
+
+// GetIntoType returns the Type for this Into, defaulting to IntoTypeContext if
+// not specified.
+func (i *Into) GetIntoType() IntoType {
+	if i == nil || i.Type == nil {
+		return IntoTypeContext
+	}
+	return *i.Type
+}
+
+// GetIntoContextKey returns the ContextKey for this Into, defaulting to
+// FunctionContextKeyExtraResources if not specified.
+func (i *Into) GetIntoContextKey() string {
+	if i == nil || i.ContextKey == nil {
+		return FunctionContextKeyExtraResources
+	}
+	return *i.ContextKey
 }
