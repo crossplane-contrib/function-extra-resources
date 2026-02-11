@@ -101,6 +101,9 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	case v1beta1.IntoTypeContext:
 		out, err = f.intoContext(verifiedExtras)
 		key = in.Spec.Into.GetIntoContextKey()
+	case v1beta1.IntoTypeEnvironment:
+		out, err = f.intoEnvironment(req, verifiedExtras)
+		key = FunctionContextKeyEnvironment
 	default:
 		err = errors.Errorf("unknown into type: %q", t)
 	}
@@ -124,8 +127,34 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 func (f *Function) intoContext(verifiedExtras []FetchedResult) (*unstructured.Unstructured, error) {
 	out := &unstructured.Unstructured{Object: map[string]interface{}{}}
 	for _, extras := range verifiedExtras {
-		if err := fieldpath.Pave(out.Object).SetValue(extras.source.ToFieldPath, extras.resources); err != nil {
-			return nil, errors.Wrapf(err, "cannot set nested field path %q", extras.source.ToFieldPath)
+		if toFieldPath := extras.source.ToFieldPath; toFieldPath != nil && *toFieldPath != "" {
+			if err := fieldpath.Pave(out.Object).SetValue(*toFieldPath, extras.resources); err != nil {
+				return nil, errors.Wrapf(err, "cannot set nested field path %q", *toFieldPath)
+			}
+		} else {
+			return nil, errors.New("must set toFieldPath for type Context")
+		}
+	}
+
+	return out, nil
+}
+
+func (f *Function) intoEnvironment(req *fnv1.RunFunctionRequest, verifiedExtras []FetchedResult) (*unstructured.Unstructured, error) {
+	mergedData := map[string]interface{}{}
+	for _, extras := range verifiedExtras {
+		for _, extra := range extras.resources {
+			if toFieldPath := extras.source.ToFieldPath; toFieldPath != nil && *toFieldPath != "" {
+				d := map[string]interface{}{}
+				if err := fieldpath.Pave(d).SetValue(*toFieldPath, extra); err != nil {
+					return nil, errors.Wrapf(err, "cannot set nested field path %q", *toFieldPath)
+				}
+
+				mergedData = mergeMaps(mergedData, d)
+			} else if e, ok := extra.(map[string]interface{}); ok {
+				mergedData = mergeMaps(mergedData, e)
+			} else {
+				return nil, errors.New("must set toFieldPath when extracted value is not an object")
+			}
 		}
 	}
 

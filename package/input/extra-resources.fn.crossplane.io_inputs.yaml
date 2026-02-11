@@ -141,8 +141,9 @@ spec:
                           type: string
                       type: object
                     toFieldPath:
-                      description: ToFieldPath is the context field path into which
-                        extra resources for this selector will be placed.
+                      description: |-
+                        ToFieldPath is the context field path into which extra resources for this selector will be placed.
+                        Required when into.type is Context.
                       type: string
                     type:
                       default: Reference
@@ -172,6 +173,7 @@ spec:
                       extra resources in a context key.
                     enum:
                     - Context
+                    - Environment
                     type: string
                 type: object
               policy:

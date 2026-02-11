@@ -102,7 +102,8 @@ type ResourceSource struct {
 	Namespace *string `json:"namespace,omitempty"`
 
 	// ToFieldPath is the context field path into which extra resources for this selector will be placed.
-	ToFieldPath string `json:"toFieldPath"`
+	// Required when into.type is Context.
+	ToFieldPath *string `json:"toFieldPath"`
 
 	// FromFieldPath specifies a field path to extract from the object, instead of the whole object.
 	FromFieldPath *string `json:"fromFieldPath,omitempty"`
@@ -235,7 +236,7 @@ func (pp *PatchPolicy) GetFromFieldPathPolicy() FromFieldPathPolicy {
 type Into struct {
 	// Type determines how to return the results. The default is to store the
 	// extra resources in a context key.
-	// +kubebuilder:validation:Enum=Context
+	// +kubebuilder:validation:Enum=Context;Environment
 	// +kubebuilder:default=Context
 	Type *IntoType `json:"type,omitempty"`
 
@@ -249,7 +250,8 @@ type IntoType string
 
 // IntoType types.
 const (
-	IntoTypeContext IntoType = "Context"
+	IntoTypeContext     IntoType = "Context"
+	IntoTypeEnvironment IntoType = "Environment"
 )
 
 // GetIntoType returns the Type for this Into, defaulting to IntoTypeContext if

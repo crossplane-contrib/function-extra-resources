@@ -155,6 +155,11 @@ func (in *ResourceSource) DeepCopyInto(out *ResourceSource) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.ToFieldPath != nil {
+		in, out := &in.ToFieldPath, &out.ToFieldPath
+		*out = new(string)
+		**out = **in
+	}
 	if in.FromFieldPath != nil {
 		in, out := &in.FromFieldPath, &out.FromFieldPath
 		*out = new(string)
