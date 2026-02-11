@@ -20,6 +20,12 @@ import (
 	"github.com/crossplane-contrib/function-extra-resources/input/v1beta1"
 )
 
+const (
+	// FunctionContextKeyEnvironment is a well-known Context key where the computed Environment
+	// will be stored, so that Crossplane v1 and other functions can access it, e.g. function-patch-and-transform.
+	FunctionContextKeyEnvironment = "apiextensions.crossplane.io/environment"
+)
+
 // Function returns whatever response you ask it to.
 type Function struct {
 	fnv1.UnimplementedFunctionRunnerServiceServer
@@ -179,6 +185,25 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 		}
 	}
 	return &fnv1.Requirements{Resources: extraResources}, nil
+}
+
+func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(a))
+	for k, v := range a {
+		out[k] = v
+	}
+	for k, v := range b {
+		if v, ok := v.(map[string]interface{}); ok {
+			if bv, ok := out[k]; ok {
+				if bv, ok := bv.(map[string]interface{}); ok {
+					out[k] = mergeMaps(bv, v)
+					continue
+				}
+			}
+		}
+		out[k] = v
+	}
+	return out
 }
 
 // Verify Min/Max and sort extra resources by field path within a single kind.
