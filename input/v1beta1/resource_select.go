@@ -96,6 +96,9 @@ type ResourceSource struct {
 
 	// Into is the key into which extra resources for this selector will be placed.
 	Into string `json:"into"`
+
+	// FromFieldPath specifies a field path to extract from the object, instead of the whole object.
+	FromFieldPath *string `json:"fromFieldPath,omitempty"`
 }
 
 // GetType returns the type of the resource source, returning the default if not set.

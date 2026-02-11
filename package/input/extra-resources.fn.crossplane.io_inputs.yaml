@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.0
+    controller-gen.kubebuilder.io/version: v0.18.0
   name: inputs.extra-resources.fn.crossplane.io
 spec:
   group: extra-resources.fn.crossplane.io
@@ -52,6 +52,10 @@ spec:
                     apiVersion:
                       description: APIVersion is the kubernetes API Version of the
                         target extra resource(s).
+                      type: string
+                    fromFieldPath:
+                      description: FromFieldPath specifies a field path to extract
+                        from the object, instead of the whole object.
                       type: string
                     into:
                       description: Into is the key into which extra resources for

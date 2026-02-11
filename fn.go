@@ -31,6 +31,11 @@ type Function struct {
 	log logging.Logger
 }
 
+type FetchedResult struct {
+	source    v1beta1.ResourceSource
+	resources []interface{}
+}
+
 // RunFunction runs the Function.
 func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
 	f.log.Info("Running function", "tag", req.GetMeta().GetTag())
@@ -87,13 +92,9 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	}
 
 	out := &unstructured.Unstructured{Object: map[string]interface{}{}}
-	for into, extras := range verifiedExtras {
-		li := []interface{}{}
-		for _, e := range extras {
-			li = append(li, e.Object)
-		}
-		if err := fieldpath.Pave(out.Object).SetValue(into, li); err != nil {
-			response.Fatal(rsp, errors.Wrapf(err, "cannot set nested field path %q", into))
+	for _, extras := range verifiedExtras {
+		if err := fieldpath.Pave(out.Object).SetValue(extras.source.Into, extras.resources); err != nil {
+			response.Fatal(rsp, errors.Wrapf(err, "cannot set nested field path %q", extras.source.Into))
 			return rsp, nil
 		}
 	}
@@ -166,8 +167,8 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 
 // Verify Min/Max and sort extra resources by field path within a single kind.
 func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource.Required, //nolint:gocyclo // TODO(reedjosh): refactor
-) (cleanedExtras map[string][]unstructured.Unstructured, err error) {
-	cleanedExtras = make(map[string][]unstructured.Unstructured)
+) ([]FetchedResult, error) {
+	results := []FetchedResult{}
 	for _, extraResource := range in.Spec.ExtraResources {
 		extraResName := extraResource.Into
 		resources, ok := extraResources[extraResName]
@@ -200,11 +201,26 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 			}
 		}
 
+		result := FetchedResult{source: extraResource}
 		for _, r := range resources {
-			cleanedExtras[extraResName] = append(cleanedExtras[extraResName], *r.Resource)
+			if path := extraResource.FromFieldPath; path != nil {
+				if *path == "" {
+					return nil, errors.New("fromFieldPath cannot be empty, omit the field to get the whole object")
+				}
+
+				// Extract part of the object, from `FromFieldPath`.
+				object, err := fieldpath.Pave(r.Resource.Object).GetValue(*path)
+				if err != nil {
+					return nil, err
+				}
+				result.resources = append(result.resources, object)
+			} else {
+				result.resources = append(result.resources, r.Resource.Object)
+			}
 		}
+		results = append(results, result)
 	}
-	return cleanedExtras, nil
+	return results, nil
 }
 
 // Sort extra resources by field path within a single kind.
