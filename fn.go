@@ -87,12 +87,21 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	out := &unstructured.Unstructured{Object: map[string]interface{}{}}
-	for _, extras := range verifiedExtras {
-		if err := fieldpath.Pave(out.Object).SetValue(extras.source.ToFieldPath, extras.resources); err != nil {
-			response.Fatal(rsp, errors.Wrapf(err, "cannot set nested field path %q", extras.source.ToFieldPath))
-			return rsp, nil
-		}
+	var out *unstructured.Unstructured
+	var key string
+
+	t := in.Spec.Into.GetIntoType()
+	switch t {
+	case v1beta1.IntoTypeContext:
+		out, err = f.intoContext(verifiedExtras)
+		key = in.Spec.Into.GetIntoContextKey()
+	default:
+		err = errors.Errorf("unknown into type: %q", t)
+	}
+
+	if err != nil {
+		response.Fatal(rsp, err)
+		return rsp, nil
 	}
 
 	s, err := resource.AsStruct(out)
@@ -101,9 +110,20 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	response.SetContextKey(rsp, in.Spec.Into.GetIntoContextKey(), structpb.NewStructValue(s))
+	response.SetContextKey(rsp, key, structpb.NewStructValue(s))
 
 	return rsp, nil
+}
+
+func (f *Function) intoContext(verifiedExtras []FetchedResult) (*unstructured.Unstructured, error) {
+	out := &unstructured.Unstructured{Object: map[string]interface{}{}}
+	for _, extras := range verifiedExtras {
+		if err := fieldpath.Pave(out.Object).SetValue(extras.source.ToFieldPath, extras.resources); err != nil {
+			return nil, errors.Wrapf(err, "cannot set nested field path %q", extras.source.ToFieldPath)
+		}
+	}
+
+	return out, nil
 }
 
 // Build requirements takes input and outputs an array of external resoruce requirements to request
