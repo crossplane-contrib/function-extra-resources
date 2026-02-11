@@ -346,10 +346,13 @@ func TestRunFunction(t *testing.T) {
 						"apiVersion": "extra-resources.fn.crossplane.io/v1beta1",
 						"kind": "Input",
 						"spec": {
+							"into": {
+								"type": "Environment"
+							},
 							"extraResources": [
 								{
 									"type": "Reference",
-									"toFieldPath": "obj-0",
+									"fromFieldPath": "data",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"ref": {
@@ -358,7 +361,7 @@ func TestRunFunction(t *testing.T) {
 								},
 								{
 									"type": "Reference",
-									"toFieldPath": "obj-1",
+									"fromFieldPath": "data",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"ref": {
@@ -367,7 +370,7 @@ func TestRunFunction(t *testing.T) {
 								},
 								{
 									"type": "Selector",
-									"toFieldPath": "obj-2",
+									"fromFieldPath": "data",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"selector": {
@@ -382,7 +385,7 @@ func TestRunFunction(t *testing.T) {
 								},
 								{
 									"type": "Selector",
-									"toFieldPath": "obj-3",
+									"fromFieldPath": "data",
 									"kind": "EnvironmentConfig",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"selector": {
@@ -397,7 +400,8 @@ func TestRunFunction(t *testing.T) {
 								},
 								{
 									"type": "Selector",
-									"toFieldPath": "obj-4",
+									"fromFieldPath": "data",
+									"toFieldPath": "nested",
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"kind": "EnvironmentConfig",
 									"selector": {
@@ -462,79 +466,17 @@ func TestRunFunction(t *testing.T) {
 					},
 					Context: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							FunctionContextKeyExtraResources: structpb.NewStructValue(resource.MustStructJSON(`{
-									"obj-0": [
-        							    {
-        							        "apiVersion": "apiextensions.crossplane.io/v1beta1",
-        							        "data": {
-        							            "firstKey": "firstVal",
-        							            "secondKey": "secondVal"
-        							        },
-        							        "kind": "EnvironmentConfig",
-        							        "metadata": {
-        							            "name": "my-env-config"
-        							        }
-        							    }
-        							],
-        							"obj-1": [
-        							    {
-        							        "apiVersion": "apiextensions.crossplane.io/v1beta1",
-        							        "data": {
-        							            "secondKey": "secondVal-ok",
-        							            "thirdKey": "thirdVal"
-        							        },
-        							        "kind": "EnvironmentConfig",
-        							        "metadata": {
-        							            "name": "my-second-env-config"
-        							        }
-        							    }
-        							],
-        							"obj-2": [
-        							    {
-        							        "apiVersion": "apiextensions.crossplane.io/v1beta1",
-        							        "data": {
-        							            "fourthKey": "fourthVal-a"
-        							        },
-        							        "kind": "EnvironmentConfig",
-        							        "metadata": {
-        							            "name": "my-third-env-config-a"
-        							        }
-        							    },
-        							    {
-        							        "apiVersion": "apiextensions.crossplane.io/v1beta1",
-        							        "data": {
-        							            "fourthKey": "fourthVal-b"
-        							        },
-        							        "kind": "EnvironmentConfig",
-        							        "metadata": {
-        							            "name": "my-third-env-config-b"
-        							        }
-        							    }
-        							],
-        							"obj-3": [
-        							    {
-        							        "apiVersion": "apiextensions.crossplane.io/v1beta1",
-        							        "data": {
-        							            "fifthKey": "fifthVal"
-        							        },
-        							        "kind": "EnvironmentConfig",
-        							        "metadata": {
-        							            "name": "my-third-env-config"
-        							        }
-        							    }
-        							],
-        							"obj-4": [
-        							    {
-        							        "apiVersion": "apiextensions.crossplane.io/v1beta1",
-        							        "data": {
-        							            "sixthKey": "sixthVal"
-        							        },
-        							        "kind": "EnvironmentConfig",
-        							        "metadata": {
-        							            "name": "my-fourth-env-config"
-        							        }
-        							    }
-        							]
+							FunctionContextKeyEnvironment: structpb.NewStructValue(resource.MustStructJSON(`{
+								"apiVersion": "internal.crossplane.io/v1alpha1",
+								"kind": "Environment",
+								"firstKey": "firstVal",
+								"secondKey": "secondVal-ok",
+								"thirdKey": "thirdVal",
+								"fourthKey": "fourthVal-b",
+								"fifthKey": "fifthVal",
+								"nested": {
+									"sixthKey": "sixthVal"
+								}
 							}`)),
 						},
 					},
