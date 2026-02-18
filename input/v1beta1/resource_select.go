@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	// Default key to retrieve extras at.
+	// FunctionContextKeyExtraResources is the default context key.
 	FunctionContextKeyExtraResources = "apiextensions.crossplane.io/extra-resources"
 )
 
@@ -44,6 +44,8 @@ type InputSpec struct {
 // A Context specifies how the function uses the response context.
 type Context struct {
 	// Key specifies the context key in which to put resolved extra resources.
+	// E.g. 'apiextensions.crossplane.io/environment', the environment used in
+	// standard functions such as Function Patch and Transform.
 	// +kubebuilder:default=apiextensions.crossplane.io/extra-resources
 	Key *string `json:"key,omitempty"`
 }

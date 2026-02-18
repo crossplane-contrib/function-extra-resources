@@ -47,8 +47,10 @@ spec:
                 properties:
                   key:
                     default: apiextensions.crossplane.io/extra-resources
-                    description: Key specifies the context key in which to put resolved
-                      extra resources.
+                    description: |-
+                      Key specifies the context key in which to put resolved extra resources.
+                      E.g. 'apiextensions.crossplane.io/environment', the environment used in
+                      standard functions such as Function Patch and Transform.
                     type: string
                 type: object
               extraResources:
