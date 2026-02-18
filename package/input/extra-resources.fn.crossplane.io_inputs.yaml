@@ -41,6 +41,16 @@ spec:
           spec:
             description: Spec is the input to this function.
             properties:
+              context:
+                description: Context specifies how the function uses the response
+                  context.
+                properties:
+                  key:
+                    default: apiextensions.crossplane.io/extra-resources
+                    description: Key specifies the context key in which to put resolved
+                      extra resources.
+                    type: string
+                type: object
               extraResources:
                 description: |-
                   ExtraResources selects a list of `ExtraResource`s. The resolved

@@ -21,11 +21,6 @@ import (
 	"github.com/crossplane-contrib/function-extra-resources/input/v1beta1"
 )
 
-// Key to retrieve extras at.
-const (
-	FunctionContextKeyExtraResources = "apiextensions.crossplane.io/extra-resources"
-)
-
 // Function returns whatever response you ask it to.
 type Function struct {
 	fnv1.UnimplementedFunctionRunnerServiceServer
@@ -109,7 +104,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		response.Fatal(rsp, errors.Errorf("cannot unmarshal %T into %T: %w", extraResources, s, err))
 		return rsp, nil
 	}
-	response.SetContextKey(rsp, FunctionContextKeyExtraResources, structpb.NewStructValue(s))
+	response.SetContextKey(rsp, in.Spec.Context.GetKey(), structpb.NewStructValue(s))
 
 	return rsp, nil
 }

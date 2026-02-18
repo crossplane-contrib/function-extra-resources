@@ -17,6 +17,8 @@ import (
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
+
+	"github.com/crossplane-contrib/function-extra-resources/input/v1beta1"
 )
 
 func TestRunFunction(t *testing.T) {
@@ -458,7 +460,7 @@ func TestRunFunction(t *testing.T) {
 					},
 					Context: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							FunctionContextKeyExtraResources: structpb.NewStructValue(resource.MustStructJSON(`{
+							v1beta1.FunctionContextKeyExtraResources: structpb.NewStructValue(resource.MustStructJSON(`{
 									"obj-0": [
         							    {
         							        "apiVersion": "apiextensions.crossplane.io/v1beta1",
