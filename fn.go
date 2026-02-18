@@ -2,11 +2,9 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"reflect"
 	"sort"
 
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -88,25 +86,19 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	// For now cheaply convert to JSON for serializing.
-	//
-	// TODO(reedjosh): look into resources.AsStruct or simlar since unsturctured k8s objects are already almost json.
-	//    structpb.NewList(v []interface{}) should create an array like.
-	//    Combining this and similar structures from the structpb lib should should be done to create
-	//    a map[string][object] container into which the found extra resources can be dumped.
-	//
-	//    The found extra resources should then be directly marhsal-able via:
-	//    obj := &unstructured.Unstructured{}
-	//    obj.MarshalJSON()
-	b, err := json.Marshal(verifiedExtras)
-	if err != nil {
-		response.Fatal(rsp, errors.Errorf("cannot marshal %T: %w", verifiedExtras, err))
-		return rsp, nil
+	// convert map[string][]unstructured.Unstructured to map[string]any
+	out := make(map[string]any, len(verifiedExtras))
+	for k, us := range verifiedExtras {
+		li := make([]any, 0, len(us))
+		for _, u := range us {
+			li = append(li, u.Object)
+		}
+		out[k] = li
 	}
-	s := &structpb.Struct{}
-	err = protojson.Unmarshal(b, s)
+
+	s, err := structpb.NewStruct(out)
 	if err != nil {
-		response.Fatal(rsp, errors.Errorf("cannot unmarshal %T into %T: %w", extraResources, s, err))
+		response.Fatal(rsp, errors.Wrapf(err, "cannot create new Struct from extra resources output"))
 		return rsp, nil
 	}
 	response.SetContextKey(rsp, FunctionContextKeyExtraResources, structpb.NewStructValue(s))
