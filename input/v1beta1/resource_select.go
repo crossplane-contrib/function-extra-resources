@@ -20,8 +20,16 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
+const (
+	// FunctionContextKeyExtraResources is the default context key.
+	FunctionContextKeyExtraResources = "apiextensions.crossplane.io/extra-resources"
+)
+
 // An InputSpec specifies extra resource(s) for rendering composed resources.
 type InputSpec struct {
+	// Context specifies how the function uses the response context.
+	Context *Context `json:"context,omitempty"`
+
 	// ExtraResources selects a list of `ExtraResource`s. The resolved
 	// resources are stored in the composite resource at
 	// `spec.extraResourceRefs` and is only updated if it is null.
@@ -31,6 +39,24 @@ type InputSpec struct {
 	// ResourceSourceReferences in ExtraResources list.
 	// +optional
 	Policy *Policy `json:"policy,omitempty"`
+}
+
+// A Context specifies how the function uses the response context.
+type Context struct {
+	// Key specifies the context key in which to put resolved extra resources.
+	// E.g. 'apiextensions.crossplane.io/environment', the environment used in
+	// standard functions such as Function Patch and Transform.
+	// +kubebuilder:default=apiextensions.crossplane.io/extra-resources
+	Key *string `json:"key,omitempty"`
+}
+
+// GetKey returns the key of the context, defaulting to
+// FunctionContextKeyExtraResources if not specified.
+func (i *Context) GetKey() string {
+	if i == nil || i.Key == nil {
+		return FunctionContextKeyExtraResources
+	}
+	return *i.Key
 }
 
 // Policy represents the Resolution policy of Reference instance.
