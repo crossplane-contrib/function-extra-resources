@@ -20,8 +20,8 @@ import (
 // +kubebuilder:resource:categories=crossplane
 type Input struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
 	// Spec is the input to this function.
-	Spec InputSpec `json:"spec,omitempty"`
+	Spec InputSpec `json:"spec"`
 }

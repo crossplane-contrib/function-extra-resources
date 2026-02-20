@@ -204,8 +204,7 @@ type ResourceSourceSelectorLabelMatcher struct {
 	Value *string `json:"value,omitempty"`
 }
 
-// FromFieldPathIsOptional returns true if the FromFieldPathPolicy is set to
-// +optional
+// FromFieldPathIsOptional returns true if the FromFieldPathPolicy is set to Optional.
 func (e *ResourceSourceSelectorLabelMatcher) FromFieldPathIsOptional() bool {
 	return e.FromFieldPathPolicy != nil && *e.FromFieldPathPolicy == FromFieldPathPolicyOptional
 }

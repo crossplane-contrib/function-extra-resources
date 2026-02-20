@@ -1,11 +1,11 @@
 # function-extra-resources
-[![CI](https://github.com/crossplane/function-template-go/actions/workflows/ci.yml/badge.svg)](https://github.com/crossplane/function-template-go/actions/workflows/ci.yml)
+[![CI](https://github.com/crossplane-contrib/function-extra-resources/actions/workflows/ci.yml/badge.svg)](https://github.com/crossplane-contrib/function-extra-resources/actions/workflows/ci.yml)
 
 A function for selecting extra resources via [composition function][functions]s in [Go][go].
 
 ## Using `function-extra-resources`
 
-Please see the example in `./examples`
+Please see the example in `./example`
 
 `function-extra-resources` is generally most useful in tandem with a function that can reference the many resources like
 `function-go-templating`.
@@ -81,7 +81,7 @@ Shoud get the function process/server build and running to serve CLI function re
 
 ### After locally serving function-extra-resources
 
-`./run.sh` will use the crossplane CLI to run our basic example in `./examples`
+`./run.sh` will use the crossplane CLI to run our basic example in `./example`
 
 ### Crossplane Function Basics
 
