@@ -2,13 +2,10 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"reflect"
 	"sort"
 
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
@@ -83,25 +80,9 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	// For now cheaply convert to JSON for serializing.
-	//
-	// TODO(reedjosh): look into resources.AsStruct or simlar since unsturctured k8s objects are already almost json.
-	//    structpb.NewList(v []interface{}) should create an array like.
-	//    Combining this and similar structures from the structpb lib should should be done to create
-	//    a map[string][object] container into which the found extra resources can be dumped.
-	//
-	//    The found extra resources should then be directly marhsal-able via:
-	//    obj := &unstructured.Unstructured{}
-	//    obj.MarshalJSON()
-	b, err := json.Marshal(verifiedExtras)
+	s, err := structpb.NewStruct(verifiedExtras)
 	if err != nil {
-		response.Fatal(rsp, errors.Errorf("cannot marshal %T: %w", verifiedExtras, err))
-		return rsp, nil
-	}
-	s := &structpb.Struct{}
-	err = protojson.Unmarshal(b, s)
-	if err != nil {
-		response.Fatal(rsp, errors.Errorf("cannot unmarshal %T into %T: %w", extraResources, s, err))
+		response.Fatal(rsp, errors.Wrapf(err, "cannot create new Struct from extra resources output"))
 		return rsp, nil
 	}
 	response.SetContextKey(rsp, in.Spec.Context.GetKey(), structpb.NewStructValue(s))
@@ -166,8 +147,8 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 
 // Verify Min/Max and sort extra resources by field path within a single kind.
 func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource.Required, //nolint:gocyclo // TODO(reedjosh): refactor
-) (cleanedExtras map[string][]unstructured.Unstructured, err error) {
-	cleanedExtras = make(map[string][]unstructured.Unstructured)
+) (map[string]any, error) {
+	cleanedExtras := make(map[string]any)
 	for _, extraResource := range in.Spec.ExtraResources {
 		extraResName := extraResource.Into
 		resources, ok := extraResources[extraResName]
@@ -185,7 +166,6 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 			if len(resources) > 1 {
 				return nil, errors.Errorf("expected exactly one extra resource %q, got %d", extraResName, len(resources))
 			}
-			cleanedExtras[extraResName] = append(cleanedExtras[extraResName], *resources[0].Resource)
 
 		case v1beta1.ResourceSourceTypeSelector:
 			selector := extraResource.Selector
@@ -198,10 +178,13 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 			if selector.MaxMatch != nil && uint64(len(resources)) > *selector.MaxMatch {
 				resources = resources[:*selector.MaxMatch]
 			}
-			for _, r := range resources {
-				cleanedExtras[extraResName] = append(cleanedExtras[extraResName], *r.Resource)
-			}
 		}
+
+		objects := make([]any, 0, len(resources))
+		for _, r := range resources {
+			objects = append(objects, r.Resource.Object)
+		}
+		cleanedExtras[extraResName] = objects
 	}
 	return cleanedExtras, nil
 }
