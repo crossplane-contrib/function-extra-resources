@@ -1,16 +1,16 @@
 module github.com/crossplane-contrib/function-extra-resources
 
-go 1.24.9
+go 1.24.10
 
 require (
-	github.com/alecthomas/kong v0.8.1
+	github.com/alecthomas/kong v1.14.0
 	github.com/crossplane/crossplane-runtime/v2 v2.1.0
 	github.com/crossplane/function-sdk-go v0.5.0
 	github.com/google/go-cmp v0.7.0
-	google.golang.org/protobuf v1.36.10
-	k8s.io/apimachinery v0.34.0
-	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
-	sigs.k8s.io/controller-tools v0.18.0
+	google.golang.org/protobuf v1.36.11
+	k8s.io/apimachinery v0.34.3
+	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
+	sigs.k8s.io/controller-tools v0.19.0
 )
 
 require (
@@ -65,7 +65,7 @@ require (
 	golang.org/x/text v0.30.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
-	golang.org/x/tools/go/packages/packagestest v0.1.1-deprecated // indirect
+	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251007200510-49b9836ed3ff // indirect
 	google.golang.org/grpc v1.75.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

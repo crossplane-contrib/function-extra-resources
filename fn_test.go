@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -12,8 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/ptr"
 
-	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
@@ -723,7 +723,7 @@ func TestRunFunction(t *testing.T) {
 
 func resourceWithFieldPathValue(path string, value any) resource.Required {
 	u := unstructured.Unstructured{
-		Object: map[string]interface{}{},
+		Object: map[string]any{},
 	}
 	err := fieldpath.Pave(u.Object).SetValue(path, value)
 	if err != nil {

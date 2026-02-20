@@ -5,11 +5,11 @@ import (
 	"reflect"
 	"sort"
 
-	"google.golang.org/protobuf/types/known/structpb"
-
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
@@ -92,7 +92,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 // Build requirements takes input and outputs an array of external resoruce requirements to request
 // from Crossplane's external resource API.
-func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Requirements, error) { //nolint:gocyclo // Adding non-nil validations increases function complexity.
+func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Requirements, error) { //nolint:gocyclo,gocognit // Adding non-nil validations increases function complexity.
 	extraResources := make(map[string]*fnv1.ResourceSelector, len(in.Spec.ExtraResources))
 	for _, extraResource := range in.Spec.ExtraResources {
 		extraResName := extraResource.Into
@@ -190,7 +190,7 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 }
 
 // Sort extra resources by field path within a single kind.
-func sortExtrasByFieldPath(extras []resource.Required, path string) error { //nolint:gocyclo // TODO(phisco): refactor
+func sortExtrasByFieldPath(extras []resource.Required, path string) error { //nolint:gocyclo,gocognit // TODO(phisco): refactor
 	if path == "" {
 		return errors.New("cannot sort by empty field path")
 	}
@@ -234,21 +234,69 @@ func sortExtrasByFieldPath(extras []resource.Required, path string) error { //no
 		}
 		switch t.Kind() { //nolint:exhaustive // we only support these types
 		case reflect.Float64:
-			return vali.(float64) < valj.(float64)
+			ai, aok := vali.(float64)
+			bj, bok := valj.(float64)
+			if !aok || !bok {
+				err = errors.Errorf("cannot compare values as float64")
+				return false
+			}
+			return ai < bj
 		case reflect.Float32:
-			return vali.(float32) < valj.(float32)
+			ai, aok := vali.(float32)
+			bj, bok := valj.(float32)
+			if !aok || !bok {
+				err = errors.Errorf("cannot compare values as float32")
+				return false
+			}
+			return ai < bj
 		case reflect.Int64:
-			return vali.(int64) < valj.(int64)
+			ai, aok := vali.(int64)
+			bj, bok := valj.(int64)
+			if !aok || !bok {
+				err = errors.Errorf("cannot compare values as int64")
+				return false
+			}
+			return ai < bj
 		case reflect.Int32:
-			return vali.(int32) < valj.(int32)
+			ai, aok := vali.(int32)
+			bj, bok := valj.(int32)
+			if !aok || !bok {
+				err = errors.Errorf("cannot compare values as int32")
+				return false
+			}
+			return ai < bj
 		case reflect.Int16:
-			return vali.(int16) < valj.(int16)
+			ai, aok := vali.(int16)
+			bj, bok := valj.(int16)
+			if !aok || !bok {
+				err = errors.Errorf("cannot compare values as int16")
+				return false
+			}
+			return ai < bj
 		case reflect.Int8:
-			return vali.(int8) < valj.(int8)
+			ai, aok := vali.(int8)
+			bj, bok := valj.(int8)
+			if !aok || !bok {
+				err = errors.Errorf("cannot compare values as int8")
+				return false
+			}
+			return ai < bj
 		case reflect.Int:
-			return vali.(int) < valj.(int)
+			ai, aok := vali.(int)
+			bj, bok := valj.(int)
+			if !aok || !bok {
+				err = errors.Errorf("cannot compare values as int")
+				return false
+			}
+			return ai < bj
 		case reflect.String:
-			return vali.(string) < valj.(string)
+			ai, aok := vali.(string)
+			bj, bok := valj.(string)
+			if !aok || !bok {
+				err = errors.Errorf("cannot compare values as string")
+				return false
+			}
+			return ai < bj
 		default:
 			// should never happen
 			err = errors.Errorf("unsupported type %q for sorting", t)
@@ -259,7 +307,7 @@ func sortExtrasByFieldPath(extras []resource.Required, path string) error { //no
 		return err
 	}
 
-	for i := 0; i < len(extras); i++ {
+	for i := range extras {
 		extras[i] = p[i].ec
 	}
 	return nil
