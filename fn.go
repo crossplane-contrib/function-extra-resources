@@ -81,22 +81,21 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	out, err := structpb.NewStruct(verifiedExtras)
+	s, err := structpb.NewStruct(verifiedExtras)
 	if err != nil {
 		response.Fatal(rsp, errors.Wrapf(err, "cannot create new Struct from extra resources output"))
 		return rsp, nil
 	}
 
 	if in.Spec.Context.GetPolicy() == v1beta1.ContextPolicyMerge {
-		if v, ok := request.GetContextKey(req, in.Spec.Context.GetKey()); ok {
-			if s := v.GetStructValue(); s != nil {
-				maps.Copy(s.GetFields(), out.GetFields())
-				out = s
-			}
+		v, _ := request.GetContextKey(req, in.Spec.Context.GetKey())
+		if fields := v.GetStructValue().GetFields(); fields != nil {
+			maps.Copy(fields, s.GetFields())
+			s.Fields = fields
 		}
 	}
 
-	response.SetContextKey(rsp, in.Spec.Context.GetKey(), structpb.NewStructValue(out))
+	response.SetContextKey(rsp, in.Spec.Context.GetKey(), structpb.NewStructValue(s))
 
 	return rsp, nil
 }
