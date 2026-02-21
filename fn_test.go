@@ -230,6 +230,21 @@ func TestRunFunction(t *testing.T) {
 			args: args{
 				req: &fnv1.RunFunctionRequest{
 					Meta: &fnv1.RequestMeta{Tag: "hello"},
+					Context: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							v1beta1.FunctionContextKeyExtraResources: structpb.NewStructValue(resource.MustStructJSON(`{
+								"previous": [
+									{
+										"apiVersion": "apiextensions.crossplane.io/v1beta1",
+										"kind": "EnvironmentConfig",
+										"metadata": {
+											"name": "previous"
+										}
+									}
+								]
+							}`)),
+						},
+					},
 					Observed: &fnv1.State{
 						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{
@@ -461,6 +476,15 @@ func TestRunFunction(t *testing.T) {
 					Context: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
 							v1beta1.FunctionContextKeyExtraResources: structpb.NewStructValue(resource.MustStructJSON(`{
+									"previous": [
+										{
+											"apiVersion": "apiextensions.crossplane.io/v1beta1",
+											"kind": "EnvironmentConfig",
+											"metadata": {
+												"name": "previous"
+											}
+										}
+									],
 									"obj-0": [
         							    {
         							        "apiVersion": "apiextensions.crossplane.io/v1beta1",
