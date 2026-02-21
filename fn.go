@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"maps"
 	"reflect"
 	"sort"
 
@@ -85,6 +86,15 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		response.Fatal(rsp, errors.Wrapf(err, "cannot create new Struct from extra resources output"))
 		return rsp, nil
 	}
+
+	if in.Spec.Context.GetPolicy() == v1beta1.ContextPolicyMerge {
+		v, _ := request.GetContextKey(req, in.Spec.Context.GetKey())
+		if fields := v.GetStructValue().GetFields(); fields != nil {
+			maps.Copy(fields, s.GetFields())
+			s.Fields = fields
+		}
+	}
+
 	response.SetContextKey(rsp, in.Spec.Context.GetKey(), structpb.NewStructValue(s))
 
 	return rsp, nil

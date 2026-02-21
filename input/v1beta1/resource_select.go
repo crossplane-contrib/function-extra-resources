@@ -48,6 +48,13 @@ type Context struct {
 	// standard functions such as Function Patch and Transform.
 	// +kubebuilder:default=apiextensions.crossplane.io/extra-resources
 	Key *string `json:"key,omitempty"`
+
+	// Policy specifies how to handle the context's potentially existing value.
+	// Replace replaces the existing context key with the new extra resources.
+	// Merge merges the extra resources into the context key's existing value.
+	// +kubebuilder:default=Replace
+	// +kubebuilder:validation:Enum=Replace;Merge
+	Policy *ContextPolicy `json:"policy,omitempty"`
 }
 
 // GetKey returns the key of the context, defaulting to
@@ -57,6 +64,25 @@ func (i *Context) GetKey() string {
 		return FunctionContextKeyExtraResources
 	}
 	return *i.Key
+}
+
+// ContextPolicy specifies how to handle the context's potentially existing value.
+type ContextPolicy string
+
+const (
+	// ContextPolicyReplace replaces the context key.
+	ContextPolicyReplace ContextPolicy = "Replace"
+	// ContextPolicyMerge merges into the context key.
+	ContextPolicyMerge ContextPolicy = "Merge"
+)
+
+// GetPolicy returns the policy of the context, defaulting to Replace if not
+// specified.
+func (i *Context) GetPolicy() ContextPolicy {
+	if i == nil || i.Policy == nil {
+		return ContextPolicyReplace
+	}
+	return *i.Policy
 }
 
 // Policy represents the Resolution policy of Reference instance.
