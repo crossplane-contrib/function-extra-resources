@@ -226,23 +226,3 @@ const (
 	FromFieldPathPolicyOptional FromFieldPathPolicy = "Optional"
 	FromFieldPathPolicyRequired FromFieldPathPolicy = "Required"
 )
-
-// A PatchPolicy configures the specifics of patching behaviour.
-type PatchPolicy struct {
-	// FromFieldPath specifies how to patch from a field path. The default is
-	// 'Optional', which means the patch will be a no-op if the specified
-	// fromFieldPath does not exist. Use 'Required' if the patch should fail if
-	// the specified path does not exist.
-	// +kubebuilder:validation:Enum=Optional;Required
-	// +optional
-	FromFieldPath *FromFieldPathPolicy `json:"fromFieldPath,omitempty"`
-	MergeOptions  *xpv1.MergeOptions   `json:"mergeOptions,omitempty"`
-}
-
-// GetFromFieldPathPolicy returns the FromFieldPathPolicy for this PatchPolicy, defaulting to FromFieldPathPolicyOptional if not specified.
-func (pp *PatchPolicy) GetFromFieldPathPolicy() FromFieldPathPolicy {
-	if pp == nil || pp.FromFieldPath == nil {
-		return FromFieldPathPolicyOptional
-	}
-	return *pp.FromFieldPath
-}
