@@ -89,7 +89,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 	if v, ok := request.GetContextKey(req, in.Spec.Context.GetKey()); ok {
 		if s := v.GetStructValue(); s != nil {
-			maps.Copy(s.Fields, out.Fields)
+			maps.Copy(s.GetFields(), out.GetFields())
 			out = s
 		}
 	}
