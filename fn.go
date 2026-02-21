@@ -87,10 +87,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	if v, ok := request.GetContextKey(req, in.Spec.Context.GetKey()); ok {
-		if s := v.GetStructValue(); s != nil {
-			maps.Copy(s.GetFields(), out.GetFields())
-			out = s
+	if in.Spec.Context.GetPolicy() == v1beta1.ContextPolicyMerge {
+		if v, ok := request.GetContextKey(req, in.Spec.Context.GetKey()); ok {
+			if s := v.GetStructValue(); s != nil {
+				maps.Copy(s.GetFields(), out.GetFields())
+				out = s
+			}
 		}
 	}
 
