@@ -50,6 +50,8 @@ type Context struct {
 	Key *string `json:"key,omitempty"`
 
 	// Policy specifies how to handle the context's potentially existing value.
+	// Replace replaces the existing context key with the new extra resources.
+	// Merge merges the extra resources into the context key's existing value.
 	// +kubebuilder:default=Replace
 	// +kubebuilder:validation:Enum=Replace;Merge
 	Policy *ContextPolicy `json:"policy,omitempty"`
@@ -68,9 +70,9 @@ func (i *Context) GetKey() string {
 type ContextPolicy string
 
 const (
-	// ContextPolicyReplace replaces the existing context key with the new results.
+	// ContextPolicyReplace replaces the context key.
 	ContextPolicyReplace ContextPolicy = "Replace"
-	// ContextPolicyMerge merges keys at the top level of the context keys.
+	// ContextPolicyMerge merges into the context key.
 	ContextPolicyMerge ContextPolicy = "Merge"
 )
 
