@@ -250,24 +250,36 @@ func sortExtrasByFieldPath(extras []resource.Required, path string) error { //no
 	return nil
 }
 
+func lessAs[T cmp.Ordered](a, b any) (bool, error) {
+	va, ok := a.(T)
+	if !ok {
+		return false, errors.Errorf("cannot convert %T to %T", a, va)
+	}
+	vb, ok := b.(T)
+	if !ok {
+		return false, errors.Errorf("cannot convert %T to %T", b, vb)
+	}
+	return cmp.Less(va, vb), nil
+}
+
 func lessByKind(k reflect.Kind, a, b any) (bool, error) { //nolint:gocyclo // exhaustive kind handling
 	switch k { //nolint:exhaustive // we only support these types
 	case reflect.Float64:
-		return cmp.Less(a.(float64), b.(float64)), nil
+		return lessAs[float64](a, b)
 	case reflect.Float32:
-		return cmp.Less(a.(float32), b.(float32)), nil
+		return lessAs[float32](a, b)
 	case reflect.Int64:
-		return cmp.Less(a.(int64), b.(int64)), nil
+		return lessAs[int64](a, b)
 	case reflect.Int32:
-		return cmp.Less(a.(int32), b.(int32)), nil
+		return lessAs[int32](a, b)
 	case reflect.Int16:
-		return cmp.Less(a.(int16), b.(int16)), nil
+		return lessAs[int16](a, b)
 	case reflect.Int8:
-		return cmp.Less(a.(int8), b.(int8)), nil
+		return lessAs[int8](a, b)
 	case reflect.Int:
-		return cmp.Less(a.(int), b.(int)), nil
+		return lessAs[int](a, b)
 	case reflect.String:
-		return cmp.Less(a.(string), b.(string)), nil
+		return lessAs[string](a, b)
 	default:
 		return false, errors.Errorf("unsupported type %q for sorting", k)
 	}
