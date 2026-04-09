@@ -1,15 +1,16 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"reflect"
 	"sort"
 
-	"google.golang.org/protobuf/types/known/structpb"
-
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
@@ -92,7 +93,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 // Build requirements takes input and outputs an array of external resoruce requirements to request
 // from Crossplane's external resource API.
-func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Requirements, error) { //nolint:gocyclo // Adding non-nil validations increases function complexity.
+func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Requirements, error) { //nolint:gocyclo,gocognit // Adding non-nil validations increases function complexity.
 	extraResources := make(map[string]*fnv1.ResourceSelector, len(in.Spec.ExtraResources))
 	for _, extraResource := range in.Spec.ExtraResources {
 		extraResName := extraResource.Into
@@ -232,35 +233,54 @@ func sortExtrasByFieldPath(extras []resource.Required, path string) error { //no
 		if valj == nil {
 			valj = reflect.Zero(t).Interface()
 		}
-		switch t.Kind() { //nolint:exhaustive // we only support these types
-		case reflect.Float64:
-			return vali.(float64) < valj.(float64)
-		case reflect.Float32:
-			return vali.(float32) < valj.(float32)
-		case reflect.Int64:
-			return vali.(int64) < valj.(int64)
-		case reflect.Int32:
-			return vali.(int32) < valj.(int32)
-		case reflect.Int16:
-			return vali.(int16) < valj.(int16)
-		case reflect.Int8:
-			return vali.(int8) < valj.(int8)
-		case reflect.Int:
-			return vali.(int) < valj.(int)
-		case reflect.String:
-			return vali.(string) < valj.(string)
-		default:
-			// should never happen
-			err = errors.Errorf("unsupported type %q for sorting", t)
+		less, lessErr := lessByKind(t.Kind(), vali, valj)
+		if lessErr != nil {
+			err = lessErr
 			return false
 		}
+		return less
 	})
 	if err != nil {
 		return err
 	}
 
-	for i := 0; i < len(extras); i++ {
+	for i := range extras {
 		extras[i] = p[i].ec
 	}
 	return nil
+}
+
+func lessAs[T cmp.Ordered](a, b any) (bool, error) {
+	va, ok := a.(T)
+	if !ok {
+		return false, errors.Errorf("cannot convert %T to %T", a, va)
+	}
+	vb, ok := b.(T)
+	if !ok {
+		return false, errors.Errorf("cannot convert %T to %T", b, vb)
+	}
+	return cmp.Less(va, vb), nil
+}
+
+func lessByKind(k reflect.Kind, a, b any) (bool, error) { //nolint:gocyclo // exhaustive kind handling
+	switch k { //nolint:exhaustive // we only support these types
+	case reflect.Float64:
+		return lessAs[float64](a, b)
+	case reflect.Float32:
+		return lessAs[float32](a, b)
+	case reflect.Int64:
+		return lessAs[int64](a, b)
+	case reflect.Int32:
+		return lessAs[int32](a, b)
+	case reflect.Int16:
+		return lessAs[int16](a, b)
+	case reflect.Int8:
+		return lessAs[int8](a, b)
+	case reflect.Int:
+		return lessAs[int](a, b)
+	case reflect.String:
+		return lessAs[string](a, b)
+	default:
+		return false, errors.Errorf("unsupported type %q for sorting", k)
+	}
 }
