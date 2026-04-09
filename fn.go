@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"reflect"
 	"sort"
@@ -190,7 +191,7 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 }
 
 // Sort extra resources by field path within a single kind.
-func sortExtrasByFieldPath(extras []resource.Required, path string) error { //nolint:gocyclo,gocognit // TODO(phisco): refactor
+func sortExtrasByFieldPath(extras []resource.Required, path string) error { //nolint:gocyclo // TODO(phisco): refactor
 	if path == "" {
 		return errors.New("cannot sort by empty field path")
 	}
@@ -232,76 +233,12 @@ func sortExtrasByFieldPath(extras []resource.Required, path string) error { //no
 		if valj == nil {
 			valj = reflect.Zero(t).Interface()
 		}
-		switch t.Kind() { //nolint:exhaustive // we only support these types
-		case reflect.Float64:
-			ai, aok := vali.(float64)
-			bj, bok := valj.(float64)
-			if !aok || !bok {
-				err = errors.Errorf("cannot compare values as float64")
-				return false
-			}
-			return ai < bj
-		case reflect.Float32:
-			ai, aok := vali.(float32)
-			bj, bok := valj.(float32)
-			if !aok || !bok {
-				err = errors.Errorf("cannot compare values as float32")
-				return false
-			}
-			return ai < bj
-		case reflect.Int64:
-			ai, aok := vali.(int64)
-			bj, bok := valj.(int64)
-			if !aok || !bok {
-				err = errors.Errorf("cannot compare values as int64")
-				return false
-			}
-			return ai < bj
-		case reflect.Int32:
-			ai, aok := vali.(int32)
-			bj, bok := valj.(int32)
-			if !aok || !bok {
-				err = errors.Errorf("cannot compare values as int32")
-				return false
-			}
-			return ai < bj
-		case reflect.Int16:
-			ai, aok := vali.(int16)
-			bj, bok := valj.(int16)
-			if !aok || !bok {
-				err = errors.Errorf("cannot compare values as int16")
-				return false
-			}
-			return ai < bj
-		case reflect.Int8:
-			ai, aok := vali.(int8)
-			bj, bok := valj.(int8)
-			if !aok || !bok {
-				err = errors.Errorf("cannot compare values as int8")
-				return false
-			}
-			return ai < bj
-		case reflect.Int:
-			ai, aok := vali.(int)
-			bj, bok := valj.(int)
-			if !aok || !bok {
-				err = errors.Errorf("cannot compare values as int")
-				return false
-			}
-			return ai < bj
-		case reflect.String:
-			ai, aok := vali.(string)
-			bj, bok := valj.(string)
-			if !aok || !bok {
-				err = errors.Errorf("cannot compare values as string")
-				return false
-			}
-			return ai < bj
-		default:
-			// should never happen
-			err = errors.Errorf("unsupported type %q for sorting", t)
+		less, lessErr := lessByKind(t.Kind(), vali, valj)
+		if lessErr != nil {
+			err = lessErr
 			return false
 		}
+		return less
 	})
 	if err != nil {
 		return err
@@ -311,4 +248,27 @@ func sortExtrasByFieldPath(extras []resource.Required, path string) error { //no
 		extras[i] = p[i].ec
 	}
 	return nil
+}
+
+func lessByKind(k reflect.Kind, a, b any) (bool, error) { //nolint:gocyclo // exhaustive kind handling
+	switch k { //nolint:exhaustive // we only support these types
+	case reflect.Float64:
+		return cmp.Less(a.(float64), b.(float64)), nil
+	case reflect.Float32:
+		return cmp.Less(a.(float32), b.(float32)), nil
+	case reflect.Int64:
+		return cmp.Less(a.(int64), b.(int64)), nil
+	case reflect.Int32:
+		return cmp.Less(a.(int32), b.(int32)), nil
+	case reflect.Int16:
+		return cmp.Less(a.(int16), b.(int16)), nil
+	case reflect.Int8:
+		return cmp.Less(a.(int8), b.(int8)), nil
+	case reflect.Int:
+		return cmp.Less(a.(int), b.(int)), nil
+	case reflect.String:
+		return cmp.Less(a.(string), b.(string)), nil
+	default:
+		return false, errors.Errorf("unsupported type %q for sorting", k)
+	}
 }
