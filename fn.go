@@ -28,7 +28,7 @@ type Function struct {
 
 // RunFunction runs the Function.
 func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
-	f.log.Info("Running function", "tag", req.GetMeta().GetTag())
+	f.log.Debug("Running function", "tag", req.GetMeta().GetTag())
 
 	rsp := response.To(req, response.DefaultTTL)
 
