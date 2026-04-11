@@ -230,6 +230,21 @@ func TestRunFunction(t *testing.T) {
 			args: args{
 				req: &fnv1.RunFunctionRequest{
 					Meta: &fnv1.RequestMeta{Tag: "hello"},
+					Context: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							v1beta1.FunctionContextKeyExtraResources: structpb.NewStructValue(resource.MustStructJSON(`{
+								"previous": [
+									{
+										"apiVersion": "apiextensions.crossplane.io/v1beta1",
+										"kind": "EnvironmentConfig",
+										"metadata": {
+											"name": "previous"
+										}
+									}
+								]
+							}`)),
+						},
+					},
 					Observed: &fnv1.State{
 						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{
@@ -646,7 +661,7 @@ func TestRunFunction(t *testing.T) {
 									"apiVersion": "apiextensions.crossplane.io/v1beta1",
 									"type": "Reference",
 									"into": "obj-0",
-									"ref": {	
+									"ref": {
 										"name": "my-env-config"
 									}
 								}
@@ -673,6 +688,116 @@ func TestRunFunction(t *testing.T) {
 					Context: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
 							"apiextensions.crossplane.io/environment": structpb.NewStructValue(resource.MustStructJSON(`{
+								"obj-0": [
+									{
+										"apiVersion": "apiextensions.crossplane.io/v1beta1",
+										"kind": "EnvironmentConfig",
+										"metadata": {
+											"name": "my-env-config"
+										}
+									}
+								]
+							}`)),
+						},
+					},
+				},
+			},
+		},
+		"MergeContext": {
+			reason: "The Function should put resolved extra resources into existing context value when policy is Merge.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "hello"},
+					Context: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							v1beta1.FunctionContextKeyExtraResources: structpb.NewStructValue(resource.MustStructJSON(`{
+								"previous": [
+									{
+										"apiVersion": "apiextensions.crossplane.io/v1beta1",
+										"kind": "EnvironmentConfig",
+										"metadata": {
+											"name": "previous"
+										}
+									}
+								]
+							}`)),
+						},
+					},
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{
+								"apiVersion": "test.crossplane.io/v1alpha1",
+								"kind": "XR",
+								"metadata": {
+									"name": "my-xr"
+								}
+							}`),
+						},
+					},
+					RequiredResources: map[string]*fnv1.Resources{
+						"obj-0": {
+							Items: []*fnv1.Resource{
+								{
+									Resource: resource.MustStructJSON(`{
+									"apiVersion": "apiextensions.crossplane.io/v1beta1",
+									"kind": "EnvironmentConfig",
+									"metadata": {
+										"name": "my-env-config"
+									}
+								}`),
+								},
+							},
+						},
+					},
+					Input: resource.MustStructJSON(`{
+						"apiVersion": "extra-resources.fn.crossplane.io/v1beta1",
+						"kind": "Input",
+						"spec": {
+							"context": {
+								"policy": "Merge"
+							},
+							"extraResources": [
+								{
+									"kind": "EnvironmentConfig",
+									"apiVersion": "apiextensions.crossplane.io/v1beta1",
+									"type": "Reference",
+									"into": "obj-0",
+									"ref": {
+										"name": "my-env-config"
+									}
+								}
+							]
+						}
+					}`),
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta:    &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{},
+					Requirements: &fnv1.Requirements{
+						Resources: map[string]*fnv1.ResourceSelector{
+							"obj-0": {
+								ApiVersion: "apiextensions.crossplane.io/v1beta1",
+								Kind:       "EnvironmentConfig",
+								Match: &fnv1.ResourceSelector_MatchName{
+									MatchName: "my-env-config",
+								},
+							},
+						},
+					},
+					Context: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							v1beta1.FunctionContextKeyExtraResources: structpb.NewStructValue(resource.MustStructJSON(`{
+								"previous": [
+									{
+										"apiVersion": "apiextensions.crossplane.io/v1beta1",
+										"kind": "EnvironmentConfig",
+										"metadata": {
+											"name": "previous"
+										}
+									}
+								],
 								"obj-0": [
 									{
 										"apiVersion": "apiextensions.crossplane.io/v1beta1",
