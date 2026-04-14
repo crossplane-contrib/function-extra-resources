@@ -149,6 +149,16 @@ func TestRunFunction(t *testing.T) {
 											}
 										]
 									}
+								},
+								{
+									"type": "Selector",
+									"kind": "Bar",
+									"apiVersion": "test.crossplane.io/v1alpha1",
+									"namespace": "my-namespace",
+									"into": "obj-7",
+									"selector": {
+										"matchLabels": []
+									}
 								}
 							]
 						}
@@ -217,6 +227,16 @@ func TestRunFunction(t *testing.T) {
 											"someMoreBar": "someMoreBar",
 										},
 									},
+								},
+								Namespace: ptr.To("my-namespace"),
+							},
+							// Contrary to obj-3, we do request obj-7 because no labels were
+							// given to begin with
+							"obj-7": {
+								ApiVersion: "test.crossplane.io/v1alpha1",
+								Kind:       "Bar",
+								Match: &fnv1.ResourceSelector_MatchLabels{
+									MatchLabels: &fnv1.MatchLabels{},
 								},
 								Namespace: ptr.To("my-namespace"),
 							},
