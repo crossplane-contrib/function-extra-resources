@@ -46,20 +46,6 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	// Crossplane only advertises its capabilities since v2.2. If it doesn't,
-	// we may be talking to Crossplane v1.x, which ignores the namespace field
-	// of resource selectors server-side. For namespaced kinds selected by
-	// labels this would silently match across ALL namespaces, so fail loudly
-	// instead of leaking resources across namespaces into the context.
-	if !request.AdvertisesCapabilities(req) {
-		for _, er := range in.Spec.ExtraResources {
-			if er.Namespace != nil {
-				response.Fatal(rsp, errors.Errorf("selector %q sets namespace, but Crossplane did not advertise capabilities (v1.x or <v2.2): the namespace filter would be ignored server-side; remove it, or use the upstream v2-native build", er.Into))
-				return rsp, nil
-			}
-		}
-	}
-
 	// Build extraResource Requests.
 	requirements, err := buildRequirements(in, oxr)
 	if err != nil {
@@ -161,7 +147,7 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 }
 
 // Verify Min/Max and sort extra resources by field path within a single kind.
-func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource.Required, //nolint:gocyclo // TODO(reedjosh): refactor
+func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource.Required, //nolint:gocyclo,gocognit // TODO(reedjosh): refactor
 ) (map[string]any, error) {
 	cleanedExtras := make(map[string]any)
 	for _, extraResource := range in.Spec.ExtraResources {
@@ -170,11 +156,28 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 		if !ok {
 			return nil, errors.Errorf("cannot find expected extra resource %q", extraResName)
 		}
+		// When a namespace is set, keep only resources in that namespace so the
+		// min/max counting below sees the filtered set. Crossplane v2 filters
+		// server-side (a no-op here); Crossplane v1.20 ignores the namespace on
+		// label selectors and returns matches from every namespace, so this
+		// keeps cross-namespace resources out of the context.
+		if extraResource.Namespace != nil {
+			kept := make([]resource.Required, 0, len(resources))
+			for _, r := range resources {
+				if r.Resource.GetNamespace() == *extraResource.Namespace {
+					kept = append(kept, r)
+				}
+			}
+			resources = kept
+		}
 		switch extraResource.GetType() {
 		case v1beta1.ResourceSourceTypeReference:
 			if len(resources) == 0 {
 				if in.Spec.Policy.IsResolutionPolicyOptional() {
 					continue
+				}
+				if extraResource.Namespace != nil {
+					return nil, errors.Errorf("required extra resource %q not found; a namespace (%q) is set, which is only honored on Crossplane v2.0+ (older versions ignore it on Reference lookups)", extraResName, *extraResource.Namespace)
 				}
 				return nil, errors.Errorf("Required extra resource %q not found", extraResName)
 			}

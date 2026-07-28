@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
@@ -36,116 +37,11 @@ func TestRunFunction(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"NamespaceRejectedWithoutCapabilities": {
-			reason: "The Function should fatal when a selector sets namespace but Crossplane does not advertise capabilities.",
-			args: args{
-				req: &fnv1.RunFunctionRequest{
-					Meta: &fnv1.RequestMeta{Tag: "hello"},
-					Observed: &fnv1.State{
-						Composite: &fnv1.Resource{
-							Resource: resource.MustStructJSON(`{
-								"apiVersion": "test.crossplane.io/v1alpha1",
-								"kind": "XR",
-								"metadata": {"name": "my-xr"}
-							}`),
-						},
-					},
-					Input: resource.MustStructJSON(`{
-						"apiVersion": "extra-resources.fn.crossplane.io/v1beta1",
-						"kind": "Input",
-						"spec": {
-							"extraResources": [
-								{
-									"type": "Selector",
-									"kind": "Bar",
-									"apiVersion": "test.crossplane.io/v1alpha1",
-									"namespace": "foo",
-									"into": "obj-0",
-									"selector": {
-										"matchLabels": [
-											{"type": "Value", "key": "k", "value": "v"}
-										]
-									}
-								}
-							]
-						}
-					}`),
-				},
-			},
-			want: want{
-				rsp: &fnv1.RunFunctionResponse{
-					Meta: &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1.Result{
-						{
-							Severity: fnv1.Severity_SEVERITY_FATAL,
-							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
-						},
-					},
-				},
-			},
-		},
-		"NamespaceAllowedWithCapabilities": {
-			reason: "The Function should request a namespaced selector when Crossplane advertises capabilities.",
-			args: args{
-				req: &fnv1.RunFunctionRequest{
-					Meta: &fnv1.RequestMeta{Tag: "hello", Capabilities: []fnv1.Capability{fnv1.Capability_CAPABILITY_CAPABILITIES}},
-					Observed: &fnv1.State{
-						Composite: &fnv1.Resource{
-							Resource: resource.MustStructJSON(`{
-								"apiVersion": "test.crossplane.io/v1alpha1",
-								"kind": "XR",
-								"metadata": {"name": "my-xr"}
-							}`),
-						},
-					},
-					Input: resource.MustStructJSON(`{
-						"apiVersion": "extra-resources.fn.crossplane.io/v1beta1",
-						"kind": "Input",
-						"spec": {
-							"extraResources": [
-								{
-									"type": "Selector",
-									"kind": "Bar",
-									"apiVersion": "test.crossplane.io/v1alpha1",
-									"namespace": "foo",
-									"into": "obj-0",
-									"selector": {
-										"matchLabels": [
-											{"type": "Value", "key": "k", "value": "v"}
-										]
-									}
-								}
-							]
-						}
-					}`),
-				},
-			},
-			want: want{
-				rsp: &fnv1.RunFunctionResponse{
-					Meta:    &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1.Result{},
-					Requirements: &fnv1.Requirements{
-						ExtraResources: map[string]*fnv1.ResourceSelector{
-							"obj-0": {
-								ApiVersion: "test.crossplane.io/v1alpha1",
-								Kind:       "Bar",
-								Match: &fnv1.ResourceSelector_MatchLabels{
-									MatchLabels: &fnv1.MatchLabels{
-										Labels: map[string]string{"k": "v"},
-									},
-								},
-								Namespace: ptr.To("foo"),
-							},
-						},
-					},
-				},
-			},
-		},
 		"RequestExtraResources": {
 			reason: "The Function should request ExtraResources",
 			args: args{
 				req: &fnv1.RunFunctionRequest{
-					Meta: &fnv1.RequestMeta{Tag: "hello", Capabilities: []fnv1.Capability{fnv1.Capability_CAPABILITY_CAPABILITIES}},
+					Meta: &fnv1.RequestMeta{Tag: "hello"},
 					Observed: &fnv1.State{
 						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{
@@ -836,6 +732,74 @@ func resourceWithFieldPathValue(path string, value any) resource.Required {
 	}
 	return resource.Required{
 		Resource: &u,
+	}
+}
+
+func TestVerifyAndSortExtras(t *testing.T) {
+	nsResource := func(ns, name string) resource.Required {
+		return resource.Required{
+			Resource: &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": "example.org/v1",
+					"kind":       "Thing",
+					"metadata":   map[string]any{"name": name, "namespace": ns},
+				},
+			},
+		}
+	}
+
+	cases := map[string]struct {
+		reason    string
+		in        *v1beta1.Input
+		extra     map[string][]resource.Required
+		wantNames []string
+		wantErr   string
+	}{
+		"SelectorNamespaceFilter": {
+			reason: "A namespace on a Selector drops resources from other namespaces before counting.",
+			in: &v1beta1.Input{Spec: v1beta1.InputSpec{ExtraResources: []v1beta1.ResourceSource{{
+				Type:      v1beta1.ResourceSourceTypeSelector,
+				Into:      "objs",
+				Namespace: ptr.To("ns-a"),
+				Selector:  &v1beta1.ResourceSourceSelector{},
+			}}}},
+			extra:     map[string][]resource.Required{"objs": {nsResource("ns-a", "keep"), nsResource("ns-b", "drop")}},
+			wantNames: []string{"keep"},
+		},
+		"ReferenceNamespaceHint": {
+			reason: "A Reference that set a namespace but resolved nothing returns a namespace hint.",
+			in: &v1beta1.Input{Spec: v1beta1.InputSpec{ExtraResources: []v1beta1.ResourceSource{{
+				Type:      v1beta1.ResourceSourceTypeReference,
+				Into:      "obj",
+				Namespace: ptr.To("ns-a"),
+				Ref:       &v1beta1.ResourceSourceReference{Name: "missing"},
+			}}}},
+			extra:   map[string][]resource.Required{"obj": {}},
+			wantErr: "only honored on Crossplane v2.0+",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got, err := verifyAndSortExtras(tc.in, tc.extra)
+			if tc.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+					t.Fatalf("%s\nwant error containing %q, got: %v", tc.reason, tc.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("%s\nunexpected error: %v", tc.reason, err)
+			}
+			var gotNames []string
+			for _, o := range got["objs"].([]any) {
+				md := o.(map[string]any)["metadata"].(map[string]any)
+				gotNames = append(gotNames, md["name"].(string))
+			}
+			if diff := cmp.Diff(tc.wantNames, gotNames); diff != "" {
+				t.Errorf("%s\n-want +got:\n%s", tc.reason, diff)
+			}
+		})
 	}
 }
 
