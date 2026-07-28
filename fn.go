@@ -46,6 +46,20 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
+	// Crossplane only advertises its capabilities since v2.2. If it doesn't,
+	// we may be talking to Crossplane v1.x, which ignores the namespace field
+	// of resource selectors server-side. For namespaced kinds selected by
+	// labels this would silently match across ALL namespaces, so fail loudly
+	// instead of leaking resources across namespaces into the context.
+	if !request.AdvertisesCapabilities(req) {
+		for _, er := range in.Spec.ExtraResources {
+			if er.Namespace != nil {
+				response.Fatal(rsp, errors.Errorf("selector %q sets namespace, but Crossplane did not advertise capabilities (v1.x or <v2.2): the namespace filter would be ignored server-side; remove it, or use the upstream v2-native build", er.Into))
+				return rsp, nil
+			}
+		}
+	}
+
 	// Build extraResource Requests.
 	requirements, err := buildRequirements(in, oxr)
 	if err != nil {

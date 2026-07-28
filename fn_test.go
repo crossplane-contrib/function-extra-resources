@@ -36,11 +36,116 @@ func TestRunFunction(t *testing.T) {
 		args   args
 		want   want
 	}{
+		"NamespaceRejectedWithoutCapabilities": {
+			reason: "The Function should fatal when a selector sets namespace but Crossplane does not advertise capabilities.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "hello"},
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{
+								"apiVersion": "test.crossplane.io/v1alpha1",
+								"kind": "XR",
+								"metadata": {"name": "my-xr"}
+							}`),
+						},
+					},
+					Input: resource.MustStructJSON(`{
+						"apiVersion": "extra-resources.fn.crossplane.io/v1beta1",
+						"kind": "Input",
+						"spec": {
+							"extraResources": [
+								{
+									"type": "Selector",
+									"kind": "Bar",
+									"apiVersion": "test.crossplane.io/v1alpha1",
+									"namespace": "foo",
+									"into": "obj-0",
+									"selector": {
+										"matchLabels": [
+											{"type": "Value", "key": "k", "value": "v"}
+										]
+									}
+								}
+							]
+						}
+					}`),
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"NamespaceAllowedWithCapabilities": {
+			reason: "The Function should request a namespaced selector when Crossplane advertises capabilities.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "hello", Capabilities: []fnv1.Capability{fnv1.Capability_CAPABILITY_CAPABILITIES}},
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{
+								"apiVersion": "test.crossplane.io/v1alpha1",
+								"kind": "XR",
+								"metadata": {"name": "my-xr"}
+							}`),
+						},
+					},
+					Input: resource.MustStructJSON(`{
+						"apiVersion": "extra-resources.fn.crossplane.io/v1beta1",
+						"kind": "Input",
+						"spec": {
+							"extraResources": [
+								{
+									"type": "Selector",
+									"kind": "Bar",
+									"apiVersion": "test.crossplane.io/v1alpha1",
+									"namespace": "foo",
+									"into": "obj-0",
+									"selector": {
+										"matchLabels": [
+											{"type": "Value", "key": "k", "value": "v"}
+										]
+									}
+								}
+							]
+						}
+					}`),
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta:    &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{},
+					Requirements: &fnv1.Requirements{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
+							"obj-0": {
+								ApiVersion: "test.crossplane.io/v1alpha1",
+								Kind:       "Bar",
+								Match: &fnv1.ResourceSelector_MatchLabels{
+									MatchLabels: &fnv1.MatchLabels{
+										Labels: map[string]string{"k": "v"},
+									},
+								},
+								Namespace: ptr.To("foo"),
+							},
+						},
+					},
+				},
+			},
+		},
 		"RequestExtraResources": {
 			reason: "The Function should request ExtraResources",
 			args: args{
 				req: &fnv1.RunFunctionRequest{
-					Meta: &fnv1.RequestMeta{Tag: "hello"},
+					Meta: &fnv1.RequestMeta{Tag: "hello", Capabilities: []fnv1.Capability{fnv1.Capability_CAPABILITY_CAPABILITIES}},
 					Observed: &fnv1.State{
 						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{
