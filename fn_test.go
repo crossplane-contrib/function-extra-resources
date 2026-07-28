@@ -160,7 +160,7 @@ func TestRunFunction(t *testing.T) {
 					Meta:    &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
 					Results: []*fnv1.Result{},
 					Requirements: &fnv1.Requirements{
-						Resources: map[string]*fnv1.ResourceSelector{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
 							"obj-0": {
 								ApiVersion: "apiextensions.crossplane.io/v1beta1",
 								Kind:       "EnvironmentConfig",
@@ -244,7 +244,7 @@ func TestRunFunction(t *testing.T) {
 							}`),
 						},
 					},
-					RequiredResources: map[string]*fnv1.Resources{
+					ExtraResources: map[string]*fnv1.Resources{
 						"obj-0": {
 							Items: []*fnv1.Resource{
 								{
@@ -418,7 +418,7 @@ func TestRunFunction(t *testing.T) {
 					Meta:    &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
 					Results: []*fnv1.Result{},
 					Requirements: &fnv1.Requirements{
-						Resources: map[string]*fnv1.ResourceSelector{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
 							"obj-0": {
 								ApiVersion: "apiextensions.crossplane.io/v1beta1",
 								Kind:       "EnvironmentConfig",
@@ -555,7 +555,7 @@ func TestRunFunction(t *testing.T) {
 							}`),
 						},
 					},
-					RequiredResources: map[string]*fnv1.Resources{
+					ExtraResources: map[string]*fnv1.Resources{
 						"environment-config-0": {
 							Items: []*fnv1.Resource{},
 						},
@@ -589,7 +589,7 @@ func TestRunFunction(t *testing.T) {
 						},
 					},
 					Requirements: &fnv1.Requirements{
-						Resources: map[string]*fnv1.ResourceSelector{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
 							"obj-0": {
 								ApiVersion: "apiextensions.crossplane.io/v1beta1",
 								Kind:       "EnvironmentConfig",
@@ -618,7 +618,7 @@ func TestRunFunction(t *testing.T) {
 							}`),
 						},
 					},
-					RequiredResources: map[string]*fnv1.Resources{
+					ExtraResources: map[string]*fnv1.Resources{
 						"obj-0": {
 							Items: []*fnv1.Resource{
 								{
@@ -660,7 +660,7 @@ func TestRunFunction(t *testing.T) {
 					Meta:    &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
 					Results: []*fnv1.Result{},
 					Requirements: &fnv1.Requirements{
-						Resources: map[string]*fnv1.ResourceSelector{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
 							"obj-0": {
 								ApiVersion: "apiextensions.crossplane.io/v1beta1",
 								Kind:       "EnvironmentConfig",

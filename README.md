@@ -3,6 +3,16 @@
 
 A function for selecting extra resources via [composition function][functions]s in [Go][go].
 
+> **Crossplane v1 compatibility branch.** This branch uses the legacy
+> `extra_resources` protocol fields and therefore works on Crossplane
+> **v1.15+ as well as v2.x** (Crossplane v2 still resolves the deprecated
+> fields). Compared to `main` it does not declare the `required-resources`
+> package capability. The `namespace` selector field is only honored by
+> Crossplane v2.2+. On older Crossplane the namespace filter is ignored
+> server-side - for namespaced kinds selected by labels this would match
+> across all namespaces - so this build fails fast if `namespace` is set
+> and the server does not advertise capabilities.
+
 ## Using `function-extra-resources`
 
 Please see the example in `./example`

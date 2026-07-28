@@ -61,13 +61,13 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	// function-extra-resources does not know if it has requested the resources already or not.
 	//
 	// If it has and these resources are now present, proceed with verification and conversion.
-	if req.RequiredResources == nil {
+	if req.ExtraResources == nil { //nolint:staticcheck // Deprecated field used intentionally for Crossplane v1.x compatibility.
 		f.log.Debug("No extra resources present, exiting", "requirements", rsp.GetRequirements())
 		return rsp, nil
 	}
 
 	// Pull extra resources from the ExtraResources request field.
-	extraResources, err := request.GetRequiredResources(req)
+	extraResources, err := request.GetExtraResources(req) //nolint:staticcheck // Deprecated helper used intentionally for Crossplane v1.x compatibility.
 	if err != nil {
 		response.Fatal(rsp, errors.Errorf("fetching extra resources %T: %w", req, err))
 		return rsp, nil
@@ -143,7 +143,7 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 			}
 		}
 	}
-	return &fnv1.Requirements{Resources: extraResources}, nil
+	return &fnv1.Requirements{ExtraResources: extraResources}, nil
 }
 
 // Verify Min/Max and sort extra resources by field path within a single kind.
