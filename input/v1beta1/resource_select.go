@@ -117,6 +117,11 @@ type ResourceSource struct {
 
 	// Namespace is the namespace in which to look for the ExtraResource.
 	// If not set, the resource is assumed to be cluster-scoped.
+	//
+	// Only applies to namespaced kinds: setting it on a cluster-scoped kind
+	// selects nothing. Crossplane v1 does not honor it server-side, so Selector
+	// matches are filtered by the function and namespaced References cannot be
+	// resolved at all.
 	// +optional
 	Namespace *string `json:"namespace,omitempty"`
 

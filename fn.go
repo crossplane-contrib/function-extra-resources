@@ -177,7 +177,7 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 					continue
 				}
 				if extraResource.Namespace != nil {
-					return nil, errors.Errorf("required extra resource %q not found; a namespace (%q) is set, which is only honored on Crossplane v2.0+ (older versions ignore it on Reference lookups)", extraResName, *extraResource.Namespace)
+					return nil, errors.Errorf("required extra resource %q not found in namespace %q: check that it exists there, that its kind is namespaced (a namespace never matches a cluster-scoped kind), and note that Crossplane before v2.0 ignores the namespace on Reference lookups", extraResName, *extraResource.Namespace)
 				}
 				return nil, errors.Errorf("Required extra resource %q not found", extraResName)
 			}
