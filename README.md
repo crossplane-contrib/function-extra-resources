@@ -63,6 +63,30 @@ spec:
             {{- end}}
 ```
 
+## Crossplane compatibility
+
+A single build works on Crossplane v1.20+ and v2.x. It requests extra resources
+over the deprecated `extra_resources` protocol fields, which Crossplane v2 still
+resolves, rather than the `required_resources` fields that only exist on v2.
+
+`namespace` behaves differently across the two majors, because Crossplane v1 has
+no notion of a namespace on an extra resource selector:
+
+- On v2, matches are filtered server-side and only the namespace's resources are
+  sent to the function.
+- On v1, the namespace is dropped from the request. Selector matches are
+  resolved across every namespace and filtered down by the function, so the
+  result is the same but the full cluster-wide match still crosses the wire —
+  which can exceed the 4MB default gRPC receive limit. Raise it with
+  `--max-recv-message-size` if you hit it.
+- On v1, a `Reference` to a namespaced resource cannot be resolved at all, since
+  the lookup is by name only. Such a reference fails rather than resolving to
+  the wrong object.
+
+In both cases `namespace` only applies to namespaced kinds. Cluster-scoped
+objects — `EnvironmentConfig` among them — have an empty namespace, so setting
+one selects nothing.
+
 ## Local dev.
 
 ### Air

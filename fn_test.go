@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
@@ -160,7 +161,7 @@ func TestRunFunction(t *testing.T) {
 					Meta:    &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
 					Results: []*fnv1.Result{},
 					Requirements: &fnv1.Requirements{
-						Resources: map[string]*fnv1.ResourceSelector{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
 							"obj-0": {
 								ApiVersion: "apiextensions.crossplane.io/v1beta1",
 								Kind:       "EnvironmentConfig",
@@ -244,7 +245,7 @@ func TestRunFunction(t *testing.T) {
 							}`),
 						},
 					},
-					RequiredResources: map[string]*fnv1.Resources{
+					ExtraResources: map[string]*fnv1.Resources{
 						"obj-0": {
 							Items: []*fnv1.Resource{
 								{
@@ -418,7 +419,7 @@ func TestRunFunction(t *testing.T) {
 					Meta:    &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
 					Results: []*fnv1.Result{},
 					Requirements: &fnv1.Requirements{
-						Resources: map[string]*fnv1.ResourceSelector{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
 							"obj-0": {
 								ApiVersion: "apiextensions.crossplane.io/v1beta1",
 								Kind:       "EnvironmentConfig",
@@ -555,7 +556,7 @@ func TestRunFunction(t *testing.T) {
 							}`),
 						},
 					},
-					RequiredResources: map[string]*fnv1.Resources{
+					ExtraResources: map[string]*fnv1.Resources{
 						"environment-config-0": {
 							Items: []*fnv1.Resource{},
 						},
@@ -589,7 +590,74 @@ func TestRunFunction(t *testing.T) {
 						},
 					},
 					Requirements: &fnv1.Requirements{
-						Resources: map[string]*fnv1.ResourceSelector{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
+							"obj-0": {
+								ApiVersion: "apiextensions.crossplane.io/v1beta1",
+								Kind:       "EnvironmentConfig",
+								Match: &fnv1.ResourceSelector_MatchName{
+									MatchName: "my-env-config",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"IgnoresRequiredResources": {
+			reason: "The Function should ignore the v2-only RequiredResources field and only read the legacy ExtraResources one.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "hello"},
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{
+								"apiVersion": "test.crossplane.io/v1alpha1",
+								"kind": "XR",
+								"metadata": {
+									"name": "my-xr"
+								}
+							}`),
+						},
+					},
+					RequiredResources: map[string]*fnv1.Resources{
+						"obj-0": {
+							Items: []*fnv1.Resource{
+								{
+									Resource: resource.MustStructJSON(`{
+										"apiVersion": "apiextensions.crossplane.io/v1beta1",
+										"kind": "EnvironmentConfig",
+										"metadata": {
+											"name": "my-env-config"
+										}
+									}`),
+								},
+							},
+						},
+					},
+					Input: resource.MustStructJSON(`{
+						"apiVersion": "extra-resources.fn.crossplane.io/v1beta1",
+						"kind": "Input",
+						"spec": {
+							"extraResources": [
+								{
+									"type": "Reference",
+									"into": "obj-0",
+									"kind": "EnvironmentConfig",
+									"apiVersion": "apiextensions.crossplane.io/v1beta1",
+									"ref": {
+										"name": "my-env-config"
+									}
+								}
+							]
+						}
+					}`),
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
+					Requirements: &fnv1.Requirements{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
 							"obj-0": {
 								ApiVersion: "apiextensions.crossplane.io/v1beta1",
 								Kind:       "EnvironmentConfig",
@@ -618,7 +686,7 @@ func TestRunFunction(t *testing.T) {
 							}`),
 						},
 					},
-					RequiredResources: map[string]*fnv1.Resources{
+					ExtraResources: map[string]*fnv1.Resources{
 						"obj-0": {
 							Items: []*fnv1.Resource{
 								{
@@ -660,7 +728,7 @@ func TestRunFunction(t *testing.T) {
 					Meta:    &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
 					Results: []*fnv1.Result{},
 					Requirements: &fnv1.Requirements{
-						Resources: map[string]*fnv1.ResourceSelector{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
 							"obj-0": {
 								ApiVersion: "apiextensions.crossplane.io/v1beta1",
 								Kind:       "EnvironmentConfig",
@@ -731,6 +799,138 @@ func resourceWithFieldPathValue(path string, value any) resource.Required {
 	}
 	return resource.Required{
 		Resource: &u,
+	}
+}
+
+func TestVerifyAndSortExtras(t *testing.T) {
+	nsResource := func(ns, name string) resource.Required {
+		return resource.Required{
+			Resource: &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": "example.org/v1",
+					"kind":       "Thing",
+					"metadata":   map[string]any{"name": name, "namespace": ns},
+				},
+			},
+		}
+	}
+
+	clusterResource := func(name string) resource.Required {
+		return resource.Required{
+			Resource: &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": "example.org/v1",
+					"kind":       "Thing",
+					"metadata":   map[string]any{"name": name},
+				},
+			},
+		}
+	}
+
+	cases := map[string]struct {
+		reason    string
+		in        *v1beta1.Input
+		extra     map[string][]resource.Required
+		wantNames []string
+		wantErr   string
+	}{
+		"SelectorNamespaceFilter": {
+			reason: "A namespace on a Selector drops resources from other namespaces before counting.",
+			in: &v1beta1.Input{Spec: v1beta1.InputSpec{ExtraResources: []v1beta1.ResourceSource{{
+				Type:      v1beta1.ResourceSourceTypeSelector,
+				Into:      "objs",
+				Namespace: ptr.To("ns-a"),
+				Selector:  &v1beta1.ResourceSourceSelector{},
+			}}}},
+			extra:     map[string][]resource.Required{"objs": {nsResource("ns-a", "keep"), nsResource("ns-b", "drop")}},
+			wantNames: []string{"keep"},
+		},
+		"SelectorNamespaceFilterAppliesBeforeMinMatch": {
+			reason: "Resources dropped by the namespace filter do not count towards minMatch.",
+			in: &v1beta1.Input{Spec: v1beta1.InputSpec{ExtraResources: []v1beta1.ResourceSource{{
+				Type:      v1beta1.ResourceSourceTypeSelector,
+				Into:      "objs",
+				Namespace: ptr.To("ns-a"),
+				Selector:  &v1beta1.ResourceSourceSelector{MinMatch: ptr.To[uint64](2)},
+			}}}},
+			extra:   map[string][]resource.Required{"objs": {nsResource("ns-a", "keep"), nsResource("ns-b", "drop")}},
+			wantErr: `expected at least 2 extra resources "objs", got 1`,
+		},
+		"SelectorNamespaceFilterAppliesBeforeSortAndMaxMatch": {
+			reason: "The namespace filter runs before sorting and truncation, so maxMatch selects from the in-namespace resources only.",
+			in: &v1beta1.Input{Spec: v1beta1.InputSpec{ExtraResources: []v1beta1.ResourceSource{{
+				Type:      v1beta1.ResourceSourceTypeSelector,
+				Into:      "objs",
+				Namespace: ptr.To("ns-a"),
+				Selector: &v1beta1.ResourceSourceSelector{
+					MaxMatch:        ptr.To[uint64](2),
+					SortByFieldPath: "metadata.name",
+				},
+			}}}},
+			extra: map[string][]resource.Required{"objs": {
+				nsResource("ns-a", "c"),
+				nsResource("ns-b", "a"),
+				nsResource("ns-a", "b"),
+				nsResource("ns-a", "a"),
+			}},
+			wantNames: []string{"a", "b"},
+		},
+		"SelectorNamespaceOnClusterScopedKind": {
+			reason: "Cluster-scoped resources have an empty namespace, so setting one selects nothing rather than everything.",
+			in: &v1beta1.Input{Spec: v1beta1.InputSpec{ExtraResources: []v1beta1.ResourceSource{{
+				Type:      v1beta1.ResourceSourceTypeSelector,
+				Into:      "objs",
+				Namespace: ptr.To("ns-a"),
+				Selector:  &v1beta1.ResourceSourceSelector{MinMatch: ptr.To[uint64](1)},
+			}}}},
+			extra:   map[string][]resource.Required{"objs": {clusterResource("env-a"), clusterResource("env-b")}},
+			wantErr: `expected at least 1 extra resources "objs", got 0`,
+		},
+		"SelectorEmptyNamespaceKeepsClusterScoped": {
+			reason: "An empty namespace is not the same as an unset one: it matches the empty namespace of cluster-scoped resources.",
+			in: &v1beta1.Input{Spec: v1beta1.InputSpec{ExtraResources: []v1beta1.ResourceSource{{
+				Type:      v1beta1.ResourceSourceTypeSelector,
+				Into:      "objs",
+				Namespace: ptr.To(""),
+				Selector:  &v1beta1.ResourceSourceSelector{},
+			}}}},
+			extra:     map[string][]resource.Required{"objs": {clusterResource("cluster-scoped"), nsResource("ns-a", "namespaced")}},
+			wantNames: []string{"cluster-scoped"},
+		},
+		"ReferenceNamespaceHint": {
+			reason: "A Reference that set a namespace but resolved nothing returns a namespace hint.",
+			in: &v1beta1.Input{Spec: v1beta1.InputSpec{ExtraResources: []v1beta1.ResourceSource{{
+				Type:      v1beta1.ResourceSourceTypeReference,
+				Into:      "obj",
+				Namespace: ptr.To("ns-a"),
+				Ref:       &v1beta1.ResourceSourceReference{Name: "missing"},
+			}}}},
+			extra:   map[string][]resource.Required{"obj": {}},
+			wantErr: `required extra resource "obj" not found in namespace "ns-a"`,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got, err := verifyAndSortExtras(tc.in, tc.extra)
+			if tc.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+					t.Fatalf("%s\nwant error containing %q, got: %v", tc.reason, tc.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("%s\nunexpected error: %v", tc.reason, err)
+			}
+			var gotNames []string
+			for _, o := range got["objs"].([]any) {
+				md := o.(map[string]any)["metadata"].(map[string]any)
+				gotNames = append(gotNames, md["name"].(string))
+			}
+			if diff := cmp.Diff(tc.wantNames, gotNames); diff != "" {
+				t.Errorf("%s\n-want +got:\n%s", tc.reason, diff)
+			}
+		})
 	}
 }
 

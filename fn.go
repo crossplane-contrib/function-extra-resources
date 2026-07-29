@@ -61,13 +61,13 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	// function-extra-resources does not know if it has requested the resources already or not.
 	//
 	// If it has and these resources are now present, proceed with verification and conversion.
-	if req.RequiredResources == nil {
+	if req.ExtraResources == nil { //nolint:staticcheck // Deprecated field used intentionally for Crossplane v1.x compatibility.
 		f.log.Debug("No extra resources present, exiting", "requirements", rsp.GetRequirements())
 		return rsp, nil
 	}
 
 	// Pull extra resources from the ExtraResources request field.
-	extraResources, err := request.GetRequiredResources(req)
+	extraResources, err := request.GetExtraResources(req) //nolint:staticcheck // Deprecated helper used intentionally for Crossplane v1.x compatibility.
 	if err != nil {
 		response.Fatal(rsp, errors.Errorf("fetching extra resources %T: %w", req, err))
 		return rsp, nil
@@ -143,11 +143,11 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 			}
 		}
 	}
-	return &fnv1.Requirements{Resources: extraResources}, nil
+	return &fnv1.Requirements{ExtraResources: extraResources}, nil
 }
 
 // Verify Min/Max and sort extra resources by field path within a single kind.
-func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource.Required, //nolint:gocyclo // TODO(reedjosh): refactor
+func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource.Required, //nolint:gocyclo,gocognit // TODO(reedjosh): refactor
 ) (map[string]any, error) {
 	cleanedExtras := make(map[string]any)
 	for _, extraResource := range in.Spec.ExtraResources {
@@ -156,11 +156,28 @@ func verifyAndSortExtras(in *v1beta1.Input, extraResources map[string][]resource
 		if !ok {
 			return nil, errors.Errorf("cannot find expected extra resource %q", extraResName)
 		}
+		// When a namespace is set, keep only resources in that namespace so the
+		// min/max counting below sees the filtered set. Crossplane v2 filters
+		// server-side (a no-op here); Crossplane v1.20 ignores the namespace on
+		// label selectors and returns matches from every namespace, so this
+		// keeps cross-namespace resources out of the context.
+		if extraResource.Namespace != nil {
+			kept := make([]resource.Required, 0, len(resources))
+			for _, r := range resources {
+				if r.Resource.GetNamespace() == *extraResource.Namespace {
+					kept = append(kept, r)
+				}
+			}
+			resources = kept
+		}
 		switch extraResource.GetType() {
 		case v1beta1.ResourceSourceTypeReference:
 			if len(resources) == 0 {
 				if in.Spec.Policy.IsResolutionPolicyOptional() {
 					continue
+				}
+				if extraResource.Namespace != nil {
+					return nil, errors.Errorf("required extra resource %q not found in namespace %q: check that it exists there, that its kind is namespaced (a namespace never matches a cluster-scoped kind), and note that Crossplane before v2.0 ignores the namespace on Reference lookups", extraResName, *extraResource.Namespace)
 				}
 				return nil, errors.Errorf("Required extra resource %q not found", extraResName)
 			}
