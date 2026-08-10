@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"cmp"
 	"context"
 	"reflect"
 	"sort"
+	"text/template"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
@@ -91,6 +93,28 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	return rsp, nil
 }
 
+// renderRefName executes name as a Go template with the XR available under
+// .observed.composite.resource, matching the convention used by function-go-templating.
+// If name contains no template directives it is returned unchanged.
+func renderRefName(name string, xr *resource.Composite) (string, error) {
+	t, err := template.New("refName").Parse(name)
+	if err != nil {
+		return "", errors.Wrapf(err, "cannot parse ref name template %q", name)
+	}
+	data := map[string]any{
+		"observed": map[string]any{
+			"composite": map[string]any{
+				"resource": xr.Resource.Object,
+			},
+		},
+	}
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, data); err != nil {
+		return "", errors.Wrapf(err, "cannot execute ref name template %q", name)
+	}
+	return buf.String(), nil
+}
+
 // Build requirements takes input and outputs an array of external resoruce requirements to request
 // from Crossplane's external resource API.
 func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Requirements, error) { //nolint:gocyclo,gocognit // Adding non-nil validations increases function complexity.
@@ -99,11 +123,15 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 		extraResName := extraResource.Into
 		switch extraResource.Type {
 		case v1beta1.ResourceSourceTypeReference, "":
+			name, err := renderRefName(extraResource.Ref.Name, xr)
+			if err != nil {
+				return nil, errors.Wrapf(err, "cannot render ref name for %q", extraResName)
+			}
 			extraResources[extraResName] = &fnv1.ResourceSelector{
 				ApiVersion: extraResource.APIVersion,
 				Kind:       extraResource.Kind,
 				Match: &fnv1.ResourceSelector_MatchName{
-					MatchName: extraResource.Ref.Name,
+					MatchName: name,
 				},
 				Namespace: extraResource.Namespace,
 			}
