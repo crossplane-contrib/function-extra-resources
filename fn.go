@@ -108,6 +108,16 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 				Namespace: extraResource.Namespace,
 			}
 		case v1beta1.ResourceSourceTypeSelector:
+
+			if len(extraResource.Selector.MatchLabels) == 0 {
+				extraResources[extraResName] = &fnv1.ResourceSelector{
+					ApiVersion: extraResource.APIVersion,
+					Kind:       extraResource.Kind,
+					Match:      &fnv1.ResourceSelector_MatchLabels{},
+					Namespace:  extraResource.Namespace,
+				}
+				continue
+			}
 			matchLabels := map[string]string{}
 			for _, selector := range extraResource.Selector.MatchLabels {
 				switch selector.GetType() {
@@ -130,6 +140,11 @@ func buildRequirements(in *v1beta1.Input, xr *resource.Composite) (*fnv1.Require
 					matchLabels[selector.Key] = value
 				}
 			}
+			// This is a separate case from the early continue when no label
+			// selectors were given.
+			// In this instance, there were originally selectors, but they were
+			// filtered out when a ValueFromFieldPath failed, but the policy made it
+			// optional. In this situation, we should not make an entry at all.
 			if len(matchLabels) == 0 {
 				continue
 			}
