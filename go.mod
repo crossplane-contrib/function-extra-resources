@@ -1,6 +1,6 @@
 module github.com/crossplane-contrib/function-extra-resources
 
-go 1.24.9
+go 1.26.10
 
 require (
 	github.com/alecthomas/kong v0.8.1
