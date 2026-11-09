@@ -207,7 +207,7 @@ func TestRunFunction(t *testing.T) {
 								Match: &fnv1.ResourceSelector_MatchName{
 									MatchName: "my-foo",
 								},
-								Namespace: ptr.To("my-namespace"),
+								Namespace: new("my-namespace"),
 							},
 							"obj-6": {
 								ApiVersion: "test.crossplane.io/v1alpha1",
@@ -219,7 +219,7 @@ func TestRunFunction(t *testing.T) {
 										},
 									},
 								},
-								Namespace: ptr.To("my-namespace"),
+								Namespace: new("my-namespace"),
 							},
 						},
 					},
@@ -839,7 +839,7 @@ func TestVerifyAndSortExtras(t *testing.T) {
 			in: &v1beta1.Input{Spec: v1beta1.InputSpec{ExtraResources: []v1beta1.ResourceSource{{
 				Type:      v1beta1.ResourceSourceTypeSelector,
 				Into:      "objs",
-				Namespace: ptr.To("ns-a"),
+				Namespace: new("ns-a"),
 				Selector:  &v1beta1.ResourceSourceSelector{},
 			}}}},
 			extra:     map[string][]resource.Required{"objs": {nsResource("ns-a", "keep"), nsResource("ns-b", "drop")}},
@@ -850,7 +850,7 @@ func TestVerifyAndSortExtras(t *testing.T) {
 			in: &v1beta1.Input{Spec: v1beta1.InputSpec{ExtraResources: []v1beta1.ResourceSource{{
 				Type:      v1beta1.ResourceSourceTypeSelector,
 				Into:      "objs",
-				Namespace: ptr.To("ns-a"),
+				Namespace: new("ns-a"),
 				Selector:  &v1beta1.ResourceSourceSelector{MinMatch: ptr.To[uint64](2)},
 			}}}},
 			extra:   map[string][]resource.Required{"objs": {nsResource("ns-a", "keep"), nsResource("ns-b", "drop")}},
@@ -861,7 +861,7 @@ func TestVerifyAndSortExtras(t *testing.T) {
 			in: &v1beta1.Input{Spec: v1beta1.InputSpec{ExtraResources: []v1beta1.ResourceSource{{
 				Type:      v1beta1.ResourceSourceTypeSelector,
 				Into:      "objs",
-				Namespace: ptr.To("ns-a"),
+				Namespace: new("ns-a"),
 				Selector: &v1beta1.ResourceSourceSelector{
 					MaxMatch:        ptr.To[uint64](2),
 					SortByFieldPath: "metadata.name",
@@ -880,7 +880,7 @@ func TestVerifyAndSortExtras(t *testing.T) {
 			in: &v1beta1.Input{Spec: v1beta1.InputSpec{ExtraResources: []v1beta1.ResourceSource{{
 				Type:      v1beta1.ResourceSourceTypeSelector,
 				Into:      "objs",
-				Namespace: ptr.To("ns-a"),
+				Namespace: new("ns-a"),
 				Selector:  &v1beta1.ResourceSourceSelector{MinMatch: ptr.To[uint64](1)},
 			}}}},
 			extra:   map[string][]resource.Required{"objs": {clusterResource("env-a"), clusterResource("env-b")}},
@@ -891,7 +891,7 @@ func TestVerifyAndSortExtras(t *testing.T) {
 			in: &v1beta1.Input{Spec: v1beta1.InputSpec{ExtraResources: []v1beta1.ResourceSource{{
 				Type:      v1beta1.ResourceSourceTypeSelector,
 				Into:      "objs",
-				Namespace: ptr.To(""),
+				Namespace: new(""),
 				Selector:  &v1beta1.ResourceSourceSelector{},
 			}}}},
 			extra:     map[string][]resource.Required{"objs": {clusterResource("cluster-scoped"), nsResource("ns-a", "namespaced")}},
@@ -902,7 +902,7 @@ func TestVerifyAndSortExtras(t *testing.T) {
 			in: &v1beta1.Input{Spec: v1beta1.InputSpec{ExtraResources: []v1beta1.ResourceSource{{
 				Type:      v1beta1.ResourceSourceTypeReference,
 				Into:      "obj",
-				Namespace: ptr.To("ns-a"),
+				Namespace: new("ns-a"),
 				Ref:       &v1beta1.ResourceSourceReference{Name: "missing"},
 			}}}},
 			extra:   map[string][]resource.Required{"obj": {}},
