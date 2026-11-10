@@ -8,11 +8,11 @@ metadata:
     #render.crossplane.io/runtime: Development
 spec:
   # This is ignored when using the Development runtime.
-  package: xpkg.upbound.io/crossplane-contrib/function-extra-resources:v0.3.0
+  package: xpkg.upbound.io/crossplane-contrib/function-extra-resources:v0.4.0
 ---
 apiVersion: pkg.crossplane.io/v1
 kind: Function
 metadata:
   name: function-go-templating
 spec:
-  package: xpkg.upbound.io/crossplane-contrib/function-go-templating:v0.12.0
+  package: xpkg.upbound.io/crossplane-contrib/function-go-templating:v0.13.2
