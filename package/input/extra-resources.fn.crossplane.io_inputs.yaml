@@ -52,6 +52,16 @@ spec:
                       E.g. 'apiextensions.crossplane.io/environment', the environment used in
                       standard functions such as Function Patch and Transform.
                     type: string
+                  policy:
+                    default: Replace
+                    description: |-
+                      Policy specifies how to handle the context's potentially existing value.
+                      Replace replaces the existing context key with the new extra resources.
+                      Merge merges the extra resources into the context key's existing value.
+                    enum:
+                    - Replace
+                    - Merge
+                    type: string
                 type: object
               extraResources:
                 description: |-
